@@ -1,0 +1,27 @@
+{
+  "id": "one-dark",
+  "label": "One Dark",
+  "order": 2,
+  "preview": {
+    "background": "#282c34",
+    "accent": "#61afef"
+  },
+  "tokens": {
+    "background": "#282c34",
+    "surface": "#21252b",
+    "surfaceSoft": "#2c313a",
+    "border": "#3b4048",
+    "textPrimary": "#abb2bf",
+    "textSecondary": "#828997",
+    "primary": "#61afef",
+    "primarySoft": "rgba(97, 175, 239, 0.15)",
+    "primaryForeground": "#282c34",
+    "link": "#c678dd",
+    "linkSoft": "rgba(198, 120, 221, 0.15)",
+    "income": "#98c379",
+    "expense": "#e06c75",
+    "warning": "#e5c07b",
+    "muted": "#5c6370",
+    "actionGradient": "linear-gradient(135deg, #61afef 0%, #528bff 100%)"
+  }
+}

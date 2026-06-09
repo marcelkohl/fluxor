@@ -1,0 +1,27 @@
+{
+  "id": "atomo-light",
+  "label": "Atomo Light",
+  "order": 5,
+  "preview": {
+    "background": "#f4f4f4",
+    "accent": "#5293d8"
+  },
+  "tokens": {
+    "background": "#f4f4f4",
+    "surface": "#ffffff",
+    "surfaceSoft": "#ececec",
+    "border": "#9f9f9f",
+    "textPrimary": "#444444",
+    "textSecondary": "#999999",
+    "primary": "#5293d8",
+    "primarySoft": "rgba(82, 147, 216, 0.12)",
+    "primaryForeground": "#ffffff",
+    "link": "#4271ae",
+    "linkSoft": "rgba(66, 113, 174, 0.12)",
+    "income": "#45A815",
+    "expense": "#cc0000",
+    "warning": "#CD8E00",
+    "muted": "#999999",
+    "actionGradient": "linear-gradient(135deg, #5293d8 0%, #6aa5e9 100%)"
+  }
+}

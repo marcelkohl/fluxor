@@ -1,0 +1,27 @@
+{
+  "id": "one-light",
+  "label": "One Light",
+  "order": 3,
+  "preview": {
+    "background": "#fafafa",
+    "accent": "#4078f2"
+  },
+  "tokens": {
+    "background": "#fafafa",
+    "surface": "#ffffff",
+    "surfaceSoft": "#f0f0f0",
+    "border": "#e5e5e6",
+    "textPrimary": "#383a42",
+    "textSecondary": "#686b77",
+    "primary": "#4078f2",
+    "primarySoft": "rgba(64, 120, 242, 0.12)",
+    "primaryForeground": "#ffffff",
+    "link": "#a626a4",
+    "linkSoft": "rgba(166, 38, 164, 0.12)",
+    "income": "#50a14f",
+    "expense": "#e45649",
+    "warning": "#c18401",
+    "muted": "#a0a1a7",
+    "actionGradient": "linear-gradient(135deg, #4078f2 0%, #3366d6 100%)"
+  }
+}

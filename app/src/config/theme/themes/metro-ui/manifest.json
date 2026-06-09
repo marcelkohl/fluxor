@@ -1,0 +1,27 @@
+{
+  "id": "metro-ui",
+  "label": "Metro UI",
+  "order": 7,
+  "preview": {
+    "background": "#ffffff",
+    "accent": "#0078d7"
+  },
+  "tokens": {
+    "background": "#ffffff",
+    "surface": "#ffffff",
+    "surfaceSoft": "#ededed",
+    "border": "#afafaf",
+    "textPrimary": "#505050",
+    "textSecondary": "#afafaf",
+    "primary": "#0078d7",
+    "primarySoft": "rgba(0, 120, 215, 0.12)",
+    "primaryForeground": "#ffffff",
+    "link": "#1BA1E2",
+    "linkSoft": "rgba(27, 161, 226, 0.12)",
+    "income": "#60A917",
+    "expense": "#CE352C",
+    "warning": "#FA6800",
+    "muted": "#afafaf",
+    "actionGradient": "linear-gradient(135deg, #0078d7 0%, #1BA1E2 100%)"
+  }
+}

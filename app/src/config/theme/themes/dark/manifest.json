@@ -1,0 +1,28 @@
+{
+  "id": "dark",
+  "label": "Escuro",
+  "order": 0,
+  "default": true,
+  "preview": {
+    "background": "#0f172a",
+    "accent": "#38bdf8"
+  },
+  "tokens": {
+    "background": "#0f172a",
+    "surface": "#1e293b",
+    "surfaceSoft": "#273449",
+    "border": "#334155",
+    "textPrimary": "#e2e8f0",
+    "textSecondary": "#94a3b8",
+    "primary": "#38bdf8",
+    "primarySoft": "rgba(56, 189, 248, 0.12)",
+    "primaryForeground": "#0f172a",
+    "link": "#38bdf8",
+    "linkSoft": "rgba(56, 189, 248, 0.12)",
+    "income": "#34d399",
+    "expense": "#fb7185",
+    "warning": "#fbbf24",
+    "muted": "#64748b",
+    "actionGradient": "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%)"
+  }
+}

@@ -1,0 +1,22 @@
+/**
+ * Fallback do tema escuro antes do JavaScript aplicar a preferência salva.
+ * Valores canônicos vivem em src/config/theme/themes/.
+ */
+:root {
+  --theme-background: #0f172a;
+  --theme-surface: #1e293b;
+  --theme-surfaceSoft: #273449;
+  --theme-border: #334155;
+  --theme-textPrimary: #e2e8f0;
+  --theme-textSecondary: #94a3b8;
+  --theme-primary: #38bdf8;
+  --theme-primarySoft: rgba(56, 189, 248, 0.12);
+  --theme-primaryForeground: #0f172a;
+  --theme-link: #38bdf8;
+  --theme-linkSoft: rgba(56, 189, 248, 0.12);
+  --theme-income: #34d399;
+  --theme-expense: #fb7185;
+  --theme-warning: #fbbf24;
+  --theme-muted: #64748b;
+  --theme-actionGradient: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+}

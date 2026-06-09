@@ -1,0 +1,27 @@
+{
+  "id": "isotopo-light",
+  "label": "Isotopo Light",
+  "order": 6,
+  "preview": {
+    "background": "#f0f0f0",
+    "accent": "#3399cc"
+  },
+  "tokens": {
+    "background": "#f0f0f0",
+    "surface": "#ffffff",
+    "surfaceSoft": "#e4e4e4",
+    "border": "#c8c8c8",
+    "textPrimary": "#3a3a3a",
+    "textSecondary": "#6e6e6e",
+    "primary": "#3399cc",
+    "primarySoft": "rgba(51, 153, 204, 0.12)",
+    "primaryForeground": "#ffffff",
+    "link": "#33b35c",
+    "linkSoft": "rgba(51, 179, 92, 0.12)",
+    "income": "#33b35c",
+    "expense": "#cc4d66",
+    "warning": "#cc9933",
+    "muted": "#8a8a8a",
+    "actionGradient": "linear-gradient(135deg, #3399cc 0%, #2d8ab8 100%)"
+  }
+}

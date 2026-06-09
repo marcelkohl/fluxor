@@ -1,0 +1,10 @@
+export type { AttachmentRepositoryPort } from "./attachment-repository.port";
+export type { CategoryRepositoryPort } from "./category-repository.port";
+export type { FinancialRecordHistoryRepositoryPort } from "./financial-record-history-repository.port";
+export type { FinancialRecordRepositoryPort } from "./financial-record-repository.port";
+export type { PayeeDocumentRepositoryPort } from "./payee-document-repository.port";
+export type { PayeePaymentMethodRepositoryPort } from "./payee-payment-method-repository.port";
+export type { PayeeRepositoryPort } from "./payee-repository.port";
+export type { RecurrenceBatchRepositoryPort } from "./recurrence-batch-repository.port";
+export type { TransferLinkRepositoryPort } from "./transfer-link-repository.port";
+export type { WalletRepositoryPort } from "./wallet-repository.port";

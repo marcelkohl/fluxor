@@ -1,0 +1,46 @@
+# Variáveis lidas de server/.env (via --env-file no Makefile ou CLI).
+# Ex.: docker compose --env-file server/.env up -d
+
+services:
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    env_file:
+      - server/.env
+    environment:
+      MARIADB_DATABASE: ${DB_NAME:-fluxor}
+      MARIADB_USER: ${DB_USER:-fluxor}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-fluxor_dev_password}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-fluxor_root_password}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    env_file:
+      - server/.env
+    environment:
+      # Sobrescreve localhost do .env — hostname da rede Docker
+      DB_HOST: mariadb
+      HOST: 0.0.0.0
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    volumes:
+      - ./server/src:/app/server/src
+      - ./app/packages/contracts:/app/app/packages/contracts:ro
+    command: npm run dev
+
+volumes:
+  mariadb_data:

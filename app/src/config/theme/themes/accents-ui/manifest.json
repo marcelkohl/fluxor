@@ -1,0 +1,27 @@
+{
+  "id": "accents-ui",
+  "label": "Accents UI",
+  "order": 8,
+  "preview": {
+    "background": "#242424",
+    "accent": "#1e91f0"
+  },
+  "tokens": {
+    "background": "#242424",
+    "surface": "#333333",
+    "surfaceSoft": "#1e1e1e",
+    "border": "#3a3a3a",
+    "textPrimary": "#aaaaaa",
+    "textSecondary": "#6b6b6b",
+    "primary": "#1e91f0",
+    "primarySoft": "rgba(30, 145, 240, 0.15)",
+    "primaryForeground": "#ffffff",
+    "link": "#d43167",
+    "linkSoft": "rgba(212, 49, 103, 0.15)",
+    "income": "#2BDA77",
+    "expense": "#c92525",
+    "warning": "#fd8440",
+    "muted": "#6b6b6b",
+    "actionGradient": "linear-gradient(135deg, #1e91f0 0%, #4b82b2 100%)"
+  }
+}

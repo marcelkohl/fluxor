@@ -1,0 +1,26 @@
+{
+  "name": "fluxor-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:migrate": "tsx src/database/cli/migrate.ts",
+    "db:status": "tsx src/database/cli/status.ts"
+  },
+  "dependencies": {
+    "@fastify/swagger": "^9.7.0",
+    "@fastify/swagger-ui": "^6.0.0",
+    "@fluxor/contracts": "file:../app/packages/contracts",
+    "dotenv": "^16.5.0",
+    "fastify": "^5.3.3",
+    "mysql2": "^3.22.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "tsx": "^4.19.4",
+    "typescript": "~5.8.3"
+  }
+}

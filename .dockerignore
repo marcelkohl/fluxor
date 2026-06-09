@@ -1,0 +1,27 @@
+# Contexto de build: raiz do projeto (docker-compose.yml)
+# Espelha server/.dockerignore + exclusões do monorepo
+
+# App (não necessário no container do server)
+app/node_modules
+app/dist
+app/src
+app/src-tauri
+app/docs
+
+# Server
+server/node_modules
+server/dist
+server/.env
+server/.env.*
+!server/.env.example
+
+# Repositório
+.git
+esbocos
+*.md
+mock-*
+*.png
+todo.md
+plano*.md
+tecnico-*.md
+lista-telas.md

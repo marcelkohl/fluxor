@@ -1,0 +1,27 @@
+{
+  "id": "slacks-ui",
+  "label": "Slacks UI",
+  "order": 9,
+  "preview": {
+    "background": "#F9F9F9",
+    "accent": "#3aa3e3"
+  },
+  "tokens": {
+    "background": "#F9F9F9",
+    "surface": "#ffffff",
+    "surfaceSoft": "#ececec",
+    "border": "#e8e8e8",
+    "textPrimary": "#444444",
+    "textSecondary": "#6E6E6E",
+    "primary": "#3aa3e3",
+    "primarySoft": "rgba(58, 163, 227, 0.12)",
+    "primaryForeground": "#ffffff",
+    "link": "#8a74b9",
+    "linkSoft": "rgba(138, 116, 185, 0.18)",
+    "income": "#38978d",
+    "expense": "#eb4d5c",
+    "warning": "#edb431",
+    "muted": "#ab9ba9",
+    "actionGradient": "linear-gradient(135deg, #3aa3e3 0%, #8a74b9 100%)"
+  }
+}

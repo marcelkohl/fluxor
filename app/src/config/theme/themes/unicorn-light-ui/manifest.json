@@ -1,0 +1,27 @@
+{
+  "id": "unicorn-light-ui",
+  "label": "Unicorn Light UI",
+  "order": 10,
+  "preview": {
+    "background": "#F4F0E8",
+    "accent": "#3D728E"
+  },
+  "tokens": {
+    "background": "#F4F0E8",
+    "surface": "#ffffff",
+    "surfaceSoft": "#E8E4DC",
+    "border": "#C9C4B9",
+    "textPrimary": "#7C705F",
+    "textSecondary": "#99896F",
+    "primary": "#7C705F",
+    "primarySoft": "rgba(124, 112, 95, 0.15)",
+    "primaryForeground": "#F4F0E8",
+    "link": "#3D728E",
+    "linkSoft": "rgba(61, 114, 142, 0.12)",
+    "income": "#54835F",
+    "expense": "#B35050",
+    "warning": "#C0A962",
+    "muted": "#B5AFA3",
+    "actionGradient": "linear-gradient(135deg, #3D728E 0%, #3D8C8E 100%)"
+  }
+}

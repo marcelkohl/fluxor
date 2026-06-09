@@ -1,0 +1,27 @@
+{
+  "id": "atomo-dark",
+  "label": "Atomo Dark",
+  "order": 4,
+  "preview": {
+    "background": "#1d1f21",
+    "accent": "#5293d8"
+  },
+  "tokens": {
+    "background": "#1d1f21",
+    "surface": "#252729",
+    "surfaceSoft": "#303030",
+    "border": "#484848",
+    "textPrimary": "#c5c8c6",
+    "textSecondary": "#888888",
+    "primary": "#5293d8",
+    "primarySoft": "rgba(82, 147, 216, 0.15)",
+    "primaryForeground": "#ffffff",
+    "link": "#96CBFE",
+    "linkSoft": "rgba(150, 203, 254, 0.15)",
+    "income": "#2BDA77",
+    "expense": "#CC6666",
+    "warning": "#ff982d",
+    "muted": "#555555",
+    "actionGradient": "linear-gradient(135deg, #5293d8 0%, #4182C4 100%)"
+  }
+}

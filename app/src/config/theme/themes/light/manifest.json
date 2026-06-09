@@ -1,0 +1,27 @@
+{
+  "id": "light",
+  "label": "Claro",
+  "order": 1,
+  "preview": {
+    "background": "#f8fafc",
+    "accent": "#2563eb"
+  },
+  "tokens": {
+    "background": "#f8fafc",
+    "surface": "#ffffff",
+    "surfaceSoft": "#f1f5f9",
+    "border": "#e2e8f0",
+    "textPrimary": "#0f172a",
+    "textSecondary": "#64748b",
+    "primary": "#2563eb",
+    "primarySoft": "rgba(37, 99, 235, 0.1)",
+    "primaryForeground": "#ffffff",
+    "link": "#2563eb",
+    "linkSoft": "rgba(37, 99, 235, 0.1)",
+    "income": "#059669",
+    "expense": "#e11d48",
+    "warning": "#d97706",
+    "muted": "#94a3b8",
+    "actionGradient": "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
+  }
+}
