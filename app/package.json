@@ -10,6 +10,7 @@
     "tauri": "node scripts/tauri-cli.mjs"
   },
   "dependencies": {
+    "@fluxor/contracts": "file:./packages/contracts",
     "@tauri-apps/api": "^2.6.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-fs": "^2.5.1",

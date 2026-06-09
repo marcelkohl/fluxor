@@ -30,6 +30,7 @@ import type {
 
 const RECORD_TYPES: readonly FinancialRecordType[] = ["payable", "receivable"];
 const ATTACHMENT_KINDS = ["document", "receipt"] as const;
+
 const HISTORY_EVENT_TYPES: readonly HistoryEventType[] = [
   "record_created",
   "record_updated",

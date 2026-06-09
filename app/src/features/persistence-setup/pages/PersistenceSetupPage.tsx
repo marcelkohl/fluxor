@@ -59,7 +59,6 @@ export function PersistenceSetupPage({ onConfigured }: PersistenceSetupPageProps
       remoteBaseUrl: trimmedUrl,
     });
 
-    setMessage("Servidor remoto ainda não implementado.");
     onConfigured(config);
   }
 

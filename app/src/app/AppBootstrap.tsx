@@ -5,11 +5,10 @@ import { initializeDatabase } from "@/features/database";
 import {
   getPersistenceConfig,
   PersistenceSetupPage,
-  RemoteProviderPendingPage,
   type PersistenceConfig,
 } from "@/features/persistence-setup";
 
-type BootstrapPhase = "setup" | "initializing" | "remote" | "ready";
+type BootstrapPhase = "setup" | "initializing" | "ready";
 
 export function AppBootstrap() {
   const [config, setConfig] = useState<PersistenceConfig | null>(() =>
@@ -21,7 +20,7 @@ export function AppBootstrap() {
       return "setup";
     }
     if (initial.mode === "remote") {
-      return "remote";
+      return "ready";
     }
     return "initializing";
   });
@@ -56,18 +55,12 @@ export function AppBootstrap() {
         onConfigured={(nextConfig) => {
           setConfig(nextConfig);
           if (nextConfig.mode === "remote") {
-            setPhase("remote");
+            setPhase("ready");
             return;
           }
           setPhase("initializing");
         }}
       />
-    );
-  }
-
-  if (phase === "remote" && config) {
-    return (
-      <RemoteProviderPendingPage remoteBaseUrl={config.remoteBaseUrl} />
     );
   }
 

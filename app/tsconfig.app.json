@@ -20,7 +20,8 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@fluxor/contracts": ["packages/contracts/index.ts"]
     }
   },
   "include": ["src"]

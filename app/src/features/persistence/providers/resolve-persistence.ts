@@ -1,11 +1,10 @@
 import { ensureDatabaseReady } from "@/features/database";
-import {
-  getPersistenceConfig,
-} from "@/features/persistence-setup";
+import { getPersistenceConfig } from "@/features/persistence-setup";
 
+import { createRemoteApiPersistenceProvider } from "../adapters/remote-api";
 import { createSqlitePersistenceProvider } from "../adapters/sqlite/sqlite-persistence.provider";
 import { PersistenceNotConfiguredError } from "../errors/persistence-not-configured.error";
-import { RemoteProviderNotImplementedError } from "../errors/remote-provider-not-implemented.error";
+import { RemoteBaseUrlMissingError } from "../errors/remote-base-url-missing.error";
 import type { PersistenceProvider } from "./persistence-provider.types";
 
 export async function resolvePersistence(): Promise<PersistenceProvider> {
@@ -16,7 +15,12 @@ export async function resolvePersistence(): Promise<PersistenceProvider> {
   }
 
   if (config.mode === "remote") {
-    throw new RemoteProviderNotImplementedError();
+    const remoteBaseUrl = config.remoteBaseUrl?.trim();
+    if (!remoteBaseUrl) {
+      throw new RemoteBaseUrlMissingError();
+    }
+
+    return createRemoteApiPersistenceProvider(remoteBaseUrl);
   }
 
   const db = await ensureDatabaseReady();

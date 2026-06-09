@@ -25,6 +25,10 @@ export default defineConfig(({ mode }) => {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@fluxor/contracts": path.resolve(
+        __dirname,
+        "./packages/contracts/index.ts",
+      ),
     },
   },
   clearScreen: false,
