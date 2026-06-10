@@ -1,4 +1,5 @@
 import type { PersistenceConfig } from "../types";
+import { normalizeRemoteBaseUrl } from "./normalize-remote-base-url";
 
 const STORAGE_KEY = "fluxor:persistence-config";
 
@@ -28,7 +29,8 @@ function parsePersistenceConfig(raw: string): PersistenceConfig | null {
 
       return {
         mode: "remote",
-        remoteBaseUrl: parsed.remoteBaseUrl.trim(),
+        remoteBaseUrl:
+          normalizeRemoteBaseUrl(parsed.remoteBaseUrl) ?? parsed.remoteBaseUrl.trim(),
         configuredAt: parsed.configuredAt,
       };
     }
@@ -63,7 +65,9 @@ export function savePersistenceConfig(
     mode: config.mode,
     configuredAt: config.configuredAt ?? new Date().toISOString(),
     ...(config.mode === "remote"
-      ? { remoteBaseUrl: config.remoteBaseUrl?.trim() }
+      ? {
+          remoteBaseUrl: normalizeRemoteBaseUrl(config.remoteBaseUrl ?? "") ?? undefined,
+        }
       : {}),
   };
 

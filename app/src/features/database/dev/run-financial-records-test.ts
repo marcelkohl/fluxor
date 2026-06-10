@@ -1,12 +1,11 @@
-import { isTauri } from "@tauri-apps/api/core";
-
 import { themeColorPalette } from "@/config/theme/theme.palette";
 import { createCategory } from "@/features/categories";
 import {
-  ensureDatabaseReady,
-  getDatabaseService,
-  initializeDatabase,
-} from "@/features/database";
+  getDevTestEnvironment,
+  isRemoteFeatureNotSupported,
+  resolveDevTestContext,
+  type DevTestStep,
+} from "@/features/database/dev/dev-test-context";
 import {
   appendHistoryEvent,
   createAttachment,
@@ -19,74 +18,99 @@ import {
   listAttachmentsByRecord,
   listFinancialRecords,
   listHistoryByRecord,
+  registerPayment,
   removeAttachment,
+  revertPayment,
   updateFinancialRecord,
 } from "@/features/financial-records";
 import { createWallet } from "@/features/wallets";
 
-export interface FinancialRecordsTestResult {
-  ranAt: string;
-  environment: "tauri" | "browser";
-  success: boolean;
-  message?: string;
+import type { DevTestBaseResult } from "./dev-test-context";
+
+export interface FinancialRecordsTestResult extends DevTestBaseResult {
   created?: {
     wallet: unknown;
     category: unknown;
     record: unknown;
-    attachment: unknown;
-    transferLink: unknown;
-    recurrenceBatch: unknown;
+    attachment?: unknown;
+    transferLink?: unknown;
+    recurrenceBatch?: unknown;
   };
   lists?: {
     records: unknown[];
-    attachments: unknown[];
-    attachmentsAfterRemove: unknown[];
+    attachments?: unknown[];
+    attachmentsAfterRemove?: unknown[];
     history: unknown[];
   };
-  error?: string;
+}
+
+function step(
+  name: string,
+  status: DevTestStep["status"],
+  message?: string,
+): DevTestStep {
+  return { name, status, message };
+}
+
+async function runOptionalStep<T>(
+  steps: DevTestStep[],
+  name: string,
+  action: () => Promise<T>,
+): Promise<T | undefined> {
+  try {
+    const result = await action();
+    steps.push(step(name, "ok"));
+    return result;
+  } catch (error) {
+    if (isRemoteFeatureNotSupported(error)) {
+      steps.push(step(name, "skipped", "Não suportado no modo remoto (API V1)"));
+      return undefined;
+    }
+    steps.push(
+      step(
+        name,
+        "failed",
+        error instanceof Error ? error.message : String(error),
+      ),
+    );
+    throw error;
+  }
 }
 
 export async function runFinancialRecordsTest(): Promise<FinancialRecordsTestResult> {
   const ranAt = new Date().toISOString();
+  const environment = getDevTestEnvironment();
+  const context = await resolveDevTestContext();
 
-  if (!isTauri()) {
+  if ("error" in context) {
     return {
       ranAt,
-      environment: "browser",
+      environment,
+      provider: "local",
       success: false,
-      message: "SQLite disponível apenas no Tauri",
+      message: context.error,
+      error: context.error,
     };
   }
 
   const ts = Date.now();
   const suffix = `dev-${ts}`;
+  const steps: DevTestStep[] = [];
 
   try {
-    await initializeDatabase();
-    const status = getDatabaseService().getState();
-    if (status.status !== "ready") {
-      return {
-        ranAt,
-        environment: "tauri",
-        success: false,
-        message: status.message ?? "Banco não está pronto",
-        error: status.message,
-      };
-    }
-
-    await ensureDatabaseReady();
-
     const wallet = await createWallet({
       name: `Carteira Records ${suffix}`,
       icon: "wallet",
       color: themeColorPalette[0],
     });
+    steps.push(step("createWallet", "ok"));
 
     const category = await createCategory({
       name: `Categoria Records ${suffix}`,
       icon: "categoryFood",
       color: themeColorPalette[1],
     });
+    steps.push(step("createCategory", "ok"));
 
     const record = await createFinancialRecord({
       walletId: wallet.id,
@@ -96,21 +120,25 @@ export async function runFinancialRecordsTest(): Promise<FinancialRecordsTestRes
       dueDate: "2026-06-15",
       expectedAmount: 12900,
     });
+    steps.push(step("createFinancialRecord", "ok"));
 
     const updated = await updateFinancialRecord({
       recordId: record.id,
       description: `Conta teste atualizada ${suffix}`,
     });
+    steps.push(step("updateFinancialRecord", "ok"));
 
-    const attachment = await createAttachment({
-      recordId: updated.id,
-      kind: "document",
-      filename: "boleto.pdf",
-      mimeType: "application/pdf",
-      size: 1024,
-      localPath: `/tmp/fluxor/${suffix}/boleto.pdf`,
-      label: "Boleto",
-    });
+    const attachment = await runOptionalStep(steps, "createAttachment", () =>
+      createAttachment({
+        recordId: updated.id,
+        kind: "document",
+        filename: "boleto.pdf",
+        mimeType: "application/pdf",
+        size: 1024,
+        localPath: `/tmp/fluxor/${suffix}/boleto.pdf`,
+        label: "Boleto",
+      }),
+    );
 
     const record2 = await createFinancialRecord({
       walletId: wallet.id,
@@ -120,44 +148,100 @@ export async function runFinancialRecordsTest(): Promise<FinancialRecordsTestRes
       dueDate: "2026-06-15",
       expectedAmount: 50000,
     });
+    steps.push(step("createFinancialRecord (destino)", "ok"));
 
-    const transferLink = await createTransferLink({
-      sourceRecordId: updated.id,
-      targetRecordId: record2.id,
-    });
+    const transferLink = await runOptionalStep(
+      steps,
+      "createTransferLink",
+      () =>
+        createTransferLink({
+          sourceRecordId: updated.id,
+          targetRecordId: record2.id,
+        }),
+    );
 
-    const recurrenceBatch = await createRecurrenceBatch({
-      ruleDescription: `Mensal ${suffix}`,
-      startDate: "2026-06-01",
-      occurrenceCount: 3,
-    });
+    const recurrenceBatch = await runOptionalStep(
+      steps,
+      "createRecurrenceBatch",
+      () =>
+        createRecurrenceBatch({
+          ruleDescription: `Mensal ${suffix}`,
+          startDate: "2026-06-01",
+          occurrenceCount: 3,
+        }),
+    );
 
-    await appendHistoryEvent({
+    await runOptionalStep(steps, "appendHistoryEvent", () =>
+      appendHistoryEvent({
+        recordId: updated.id,
+        eventType: "alert_created",
+        description: "Alerta configurado",
+      }),
+    );
+
+    const registered = await registerPayment({
       recordId: updated.id,
-      eventType: "alert_created",
-      description: "Alerta configurado",
+      effectiveAmount: 12900,
+      effectiveDate: "2026-06-15",
     });
+    steps.push(step("registerPayment", "ok"));
+
+    const reverted = await revertPayment(registered.id);
+    steps.push(step("revertPayment", "ok"));
 
     const attachments = await listAttachmentsByRecord(updated.id);
-    const history = await listHistoryByRecord(updated.id);
-    const records = await listFinancialRecords({ walletId: wallet.id });
+    steps.push(
+      step(
+        "listAttachmentsByRecord",
+        context.provider === "remote" ? "skipped" : "ok",
+        context.provider === "remote"
+          ? "Retorna lista vazia no remoto (não suportado)"
+          : undefined,
+      ),
+    );
 
-    await removeAttachment(attachment.id);
+    const history = await listHistoryByRecord(reverted.id);
+    steps.push(step("listHistoryByRecord", "ok"));
+
+    const records = await listFinancialRecords({ walletId: wallet.id });
+    steps.push(step("listFinancialRecords", "ok"));
+
+    if (attachment) {
+      await removeAttachment(attachment.id);
+      steps.push(step("removeAttachment", "ok"));
+    }
+
     const attachmentsAfterRemove = await listAttachmentsByRecord(updated.id);
 
-    await getFinancialRecordById(updated.id);
-    await getTransferLink(transferLink.id);
-    await getRecurrenceBatch(recurrenceBatch.id);
+    await getFinancialRecordById(reverted.id);
+    steps.push(step("getFinancialRecordById", "ok"));
+
+    if (transferLink) {
+      await getTransferLink(transferLink.id);
+      steps.push(step("getTransferLink", "ok"));
+    }
+
+    if (recurrenceBatch) {
+      await getRecurrenceBatch(recurrenceBatch.id);
+      steps.push(step("getRecurrenceBatch", "ok"));
+    }
+
+    const failedStep = steps.find((item) => item.status === "failed");
 
     return {
       ranAt,
-      environment: "tauri",
-      success: true,
-      message: "Infraestrutura FinancialRecord exercitada com sucesso",
+      environment,
+      provider: context.provider,
+      remoteBaseUrl: context.remoteBaseUrl,
+      success: !failedStep,
+      message: failedStep
+        ? `Falhou em: ${failedStep.name}${failedStep.message ? ` — ${failedStep.message}` : ""}`
+        : "Infraestrutura FinancialRecord exercitada com sucesso",
+      steps,
       created: {
         wallet,
         category,
-        record: updated,
+        record: reverted,
         attachment,
         transferLink,
         recurrenceBatch,
@@ -170,10 +254,23 @@ export async function runFinancialRecordsTest(): Promise<FinancialRecordsTestRes
       },
     };
   } catch (error) {
+    if (!steps.some((item) => item.name === "unexpected")) {
+      steps.push(
+        step(
+          "unexpected",
+          "failed",
+          error instanceof Error ? error.message : String(error),
+        ),
+      );
+    }
+
     return {
       ranAt,
-      environment: "tauri",
+      environment,
+      provider: context.provider,
+      remoteBaseUrl: context.remoteBaseUrl,
       success: false,
+      steps,
       error: error instanceof Error ? error.message : String(error),
     };
   }

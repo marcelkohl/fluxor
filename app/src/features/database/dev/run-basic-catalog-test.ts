@@ -1,83 +1,76 @@
-import { isTauri } from "@tauri-apps/api/core";
-
 import { themeColorPalette } from "@/config/theme/theme.palette";
 import { createCategory, createCategoryQuick } from "@/features/categories";
-import { CategoryRepository } from "@/features/categories/repositories";
+import { listCategories } from "@/features/categories/application/category.use-cases";
 import {
-  ensureDatabaseReady,
-  getDatabaseService,
-  initializeDatabase,
-} from "@/features/database";
+  getDevTestEnvironment,
+  isRemoteFeatureNotSupported,
+  resolveDevTestContext,
+  type DevTestStep,
+} from "@/features/database/dev/dev-test-context";
 import {
   createPayee,
   createPayeeDocument,
   createPayeePaymentMethod,
   createPayeeQuick,
 } from "@/features/payees";
-import { PayeeRepository } from "@/features/payees/repositories";
+import { listPayees } from "@/features/payees/application/payee.use-cases";
 import { createWallet } from "@/features/wallets";
-import { WalletRepository } from "@/features/wallets/repositories";
+import { listWallets } from "@/features/wallets/application/wallet.use-cases";
 
-export interface BasicCatalogTestResult {
-  ranAt: string;
-  environment: "tauri" | "browser";
-  success: boolean;
-  message?: string;
+import type { DevTestBaseResult } from "./dev-test-context";
+
+export interface BasicCatalogTestResult extends DevTestBaseResult {
   created?: {
     wallet: unknown;
     category: unknown;
     categoryQuick: unknown;
     payee: unknown;
     payeeQuick: unknown;
-    payeeDocument: unknown;
-    payeePaymentMethod: unknown;
+    payeeDocument?: unknown;
+    payeePaymentMethod?: unknown;
   };
   lists?: {
     wallets: unknown[];
     categories: unknown[];
     payees: unknown[];
   };
-  error?: string;
+}
+
+function step(
+  name: string,
+  status: DevTestStep["status"],
+  message?: string,
+): DevTestStep {
+  return { name, status, message };
 }
 
 export async function runBasicCatalogTest(): Promise<BasicCatalogTestResult> {
   const ranAt = new Date().toISOString();
+  const environment = getDevTestEnvironment();
+  const context = await resolveDevTestContext();
 
-  if (!isTauri()) {
+  if ("error" in context) {
     return {
       ranAt,
-      environment: "browser",
+      environment,
+      provider: "local",
       success: false,
-      message: "SQLite disponível apenas no Tauri",
+      message: context.error,
+      error: context.error,
     };
   }
 
   const ts = Date.now();
   const suffix = `dev-${ts}`;
+  const steps: DevTestStep[] = [];
 
   try {
-    await initializeDatabase();
-    const status = getDatabaseService().getState();
-    if (status.status !== "ready") {
-      return {
-        ranAt,
-        environment: "tauri",
-        success: false,
-        message: status.message ?? "Banco não está pronto",
-        error: status.message,
-      };
-    }
-
-    const db = await ensureDatabaseReady();
-    const walletRepo = new WalletRepository(db);
-    const categoryRepo = new CategoryRepository(db);
-    const payeeRepo = new PayeeRepository(db);
-
     const wallet = await createWallet({
       name: `Carteira ${suffix}`,
       icon: "wallet",
       color: themeColorPalette[0],
     });
+    steps.push(step("createWallet", "ok"));
 
     const category = await createCategory({
       name: `Categoria ${suffix}`,
@@ -85,41 +78,87 @@ export async function runBasicCatalogTest(): Promise<BasicCatalogTestResult> {
       color: themeColorPalette[1],
       description: "Teste DEV",
     });
+    steps.push(step("createCategory", "ok"));
 
     const categoryQuick = await createCategoryQuick({
       name: `Categoria Quick ${suffix}`,
     });
+    steps.push(step("createCategoryQuick", "ok"));
 
     const payee = await createPayee({
       name: `Favorecido ${suffix}`,
       notes: "Teste DEV",
     });
+    steps.push(step("createPayee", "ok"));
 
     const payeeQuick = await createPayeeQuick({
       name: `Favorecido Quick ${suffix}`,
     });
+    steps.push(step("createPayeeQuick", "ok"));
 
-    const payeeDocument = await createPayeeDocument({
-      payeeId: payee.id,
-      type: "CPF",
-      value: `000.000.000-${String(ts).slice(-2)}`,
-    });
+    let payeeDocument: unknown;
+    try {
+      payeeDocument = await createPayeeDocument({
+        payeeId: payee.id,
+        type: "CPF",
+        value: `000.000.000-${String(ts).slice(-2)}`,
+      });
+      steps.push(step("createPayeeDocument", "ok"));
+    } catch (error) {
+      if (isRemoteFeatureNotSupported(error)) {
+        steps.push(
+          step(
+            "createPayeeDocument",
+            "skipped",
+            "Não suportado no modo remoto (API V1)",
+          ),
+        );
+      } else {
+        throw error;
+      }
+    }
 
-    const payeePaymentMethod = await createPayeePaymentMethod({
-      payeeId: payee.id,
-      type: "PIX",
-      value: `dev-${suffix}@fluxor.test`,
-    });
+    let payeePaymentMethod: unknown;
+    try {
+      payeePaymentMethod = await createPayeePaymentMethod({
+        payeeId: payee.id,
+        type: "PIX",
+        value: `dev-${suffix}@fluxor.test`,
+      });
+      steps.push(step("createPayeePaymentMethod", "ok"));
+    } catch (error) {
+      if (isRemoteFeatureNotSupported(error)) {
+        steps.push(
+          step(
+            "createPayeePaymentMethod",
+            "skipped",
+            "Não suportado no modo remoto (API V1)",
+          ),
+        );
+      } else {
+        throw error;
+      }
+    }
 
-    const wallets = await walletRepo.listActive();
-    const categories = await categoryRepo.listActive();
-    const payees = await payeeRepo.listActive();
+    const wallets = await listWallets();
+    const categories = await listCategories();
+    const payees = await listPayees();
+    steps.push(step("listWallets", "ok"));
+    steps.push(step("listCategories", "ok"));
+    steps.push(step("listPayees", "ok"));
+
+    const failedStep = steps.find((item) => item.status === "failed");
 
     return {
       ranAt,
-      environment: "tauri",
-      success: true,
-      message: "Cadastros básicos criados e listados com sucesso",
+      environment,
+      provider: context.provider,
+      remoteBaseUrl: context.remoteBaseUrl,
+      success: !failedStep,
+      message: failedStep
+        ? `Falhou em: ${failedStep.name}`
+        : "Cadastros básicos criados e listados com sucesso",
+      steps,
       created: {
         wallet,
         category,
@@ -136,10 +175,21 @@ export async function runBasicCatalogTest(): Promise<BasicCatalogTestResult> {
       },
     };
   } catch (error) {
+    steps.push(
+      step(
+        "unexpected",
+        "failed",
+        error instanceof Error ? error.message : String(error),
+      ),
+    );
+
     return {
       ranAt,
-      environment: "tauri",
+      environment,
+      provider: context.provider,
+      remoteBaseUrl: context.remoteBaseUrl,
       success: false,
+      steps,
       error: error instanceof Error ? error.message : String(error),
     };
   }

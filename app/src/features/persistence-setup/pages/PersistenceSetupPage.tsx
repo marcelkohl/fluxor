@@ -2,8 +2,14 @@ import { useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 
 import type { PersistenceConfig } from "../types";
-import { savePersistenceConfig } from "../services";
+import {
+  normalizeRemoteBaseUrl,
+  savePersistenceConfig,
+  testRemoteServerConnection,
+  type RemoteServerTestResult,
+} from "../services";
 import { PersistenceModeCard } from "../components/PersistenceModeCard";
+import { RemoteConnectionTestResult } from "../components/RemoteConnectionTestResult";
 
 type SetupStep = "choose" | "remote";
 
@@ -15,6 +21,11 @@ export function PersistenceSetupPage({ onConfigured }: PersistenceSetupPageProps
   const [step, setStep] = useState<SetupStep>("choose");
   const [remoteBaseUrl, setRemoteBaseUrl] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<RemoteServerTestResult | null>(
+    null,
+  );
+  const [validatedUrl, setValidatedUrl] = useState<string | null>(null);
 
   function handleSelectLocal() {
     setMessage(null);
@@ -30,37 +41,78 @@ export function PersistenceSetupPage({ onConfigured }: PersistenceSetupPageProps
 
   function handleSelectRemote() {
     setMessage(null);
+    setTestResult(null);
+    setValidatedUrl(null);
     setStep("remote");
   }
 
-  function handleSaveRemote(event: React.FormEvent) {
+  function handleUrlChange(value: string) {
+    setRemoteBaseUrl(value);
+    setTestResult(null);
+    setValidatedUrl(null);
+    setMessage(null);
+  }
+
+  async function handleTestConnection() {
+    setMessage(null);
+    setTesting(true);
+
+    try {
+      const result = await testRemoteServerConnection(remoteBaseUrl);
+      setTestResult(result);
+
+      if (result.outcome === "success" && result.normalizedUrl) {
+        setValidatedUrl(result.normalizedUrl);
+        setRemoteBaseUrl(result.normalizedUrl);
+      } else {
+        setValidatedUrl(null);
+      }
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  async function handleSaveRemote(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
 
-    const trimmedUrl = remoteBaseUrl.trim();
-    if (!trimmedUrl) {
-      setMessage("Informe a URL do servidor.");
+    const normalized = normalizeRemoteBaseUrl(remoteBaseUrl);
+    if (!normalized) {
+      setMessage("Informe uma URL válida (HTTP ou HTTPS).");
       return;
     }
 
-    try {
-      const parsed = new URL(trimmedUrl);
-      if (!["http:", "https:"].includes(parsed.protocol)) {
-        setMessage("A URL deve usar HTTP ou HTTPS.");
-        return;
+    let urlToSave = validatedUrl;
+
+    if (validatedUrl !== normalized) {
+      setTesting(true);
+      try {
+        const result = await testRemoteServerConnection(normalized);
+        setTestResult(result);
+
+        if (result.outcome !== "success" || !result.normalizedUrl) {
+          return;
+        }
+
+        urlToSave = result.normalizedUrl;
+        setValidatedUrl(result.normalizedUrl);
+      } finally {
+        setTesting(false);
       }
-    } catch {
-      setMessage("URL do servidor inválida.");
-      return;
     }
 
     const config = savePersistenceConfig({
       mode: "remote",
-      remoteBaseUrl: trimmedUrl,
+      remoteBaseUrl: urlToSave ?? normalized,
     });
 
     onConfigured(config);
   }
+
+  const canSave =
+    Boolean(normalizeRemoteBaseUrl(remoteBaseUrl)) &&
+    validatedUrl === normalizeRemoteBaseUrl(remoteBaseUrl) &&
+    testResult?.outcome === "success";
 
   return (
     <div className="flex min-h-screen flex-col bg-background px-4 py-8">
@@ -98,11 +150,22 @@ export function PersistenceSetupPage({ onConfigured }: PersistenceSetupPageProps
                 id="remote-base-url"
                 type="url"
                 value={remoteBaseUrl}
-                onChange={(event) => setRemoteBaseUrl(event.target.value)}
-                placeholder="https://api.meuservidor.com"
+                onChange={(event) => handleUrlChange(event.target.value)}
+                placeholder="http://localhost:3009"
                 className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text-primary outline-none focus:border-link"
               />
             </div>
+
+            <button
+              type="button"
+              disabled={testing || !remoteBaseUrl.trim()}
+              onClick={() => void handleTestConnection()}
+              className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-soft disabled:opacity-50"
+            >
+              {testing ? "Testando conexão…" : "Testar conexão"}
+            </button>
+
+            <RemoteConnectionTestResult result={testResult} testing={testing} />
 
             <div className="flex gap-2">
               <button
@@ -110,6 +173,8 @@ export function PersistenceSetupPage({ onConfigured }: PersistenceSetupPageProps
                 onClick={() => {
                   setStep("choose");
                   setMessage(null);
+                  setTestResult(null);
+                  setValidatedUrl(null);
                 }}
                 className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-text-primary"
               >
@@ -117,11 +182,18 @@ export function PersistenceSetupPage({ onConfigured }: PersistenceSetupPageProps
               </button>
               <button
                 type="submit"
-                className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-background"
+                disabled={testing || !canSave}
+                className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-background disabled:opacity-50"
               >
                 Continuar
               </button>
             </div>
+
+            {!canSave && remoteBaseUrl.trim() && !testing ? (
+              <p className="text-xs text-muted">
+                Teste a conexão com sucesso antes de continuar.
+              </p>
+            ) : null}
           </form>
         )}
 

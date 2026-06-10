@@ -1,3 +1,4 @@
+import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { registerErrorHandler } from "./http/error-handler.js";
 import { createMariadbPersistenceProvider } from "./persistence/index.js";
@@ -26,6 +27,10 @@ export async function buildApp() {
 
   app.decorate("persistence", createMariadbPersistenceProvider());
   registerErrorHandler(app);
+
+  await app.register(cors, {
+    origin: true,
+  });
 
   await registerSwagger(app);
   await app.register(healthRoute);

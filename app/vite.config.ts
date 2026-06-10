@@ -16,9 +16,21 @@ function readDevPort(env: Record<string, string>): number {
   return port;
 }
 
+function readDevHost(env: Record<string, string>): string | boolean {
+  const raw = env.VITE_DEV_HOST?.trim();
+  if (!raw || raw === "true") {
+    return true;
+  }
+  if (raw === "false") {
+    return false;
+  }
+  return raw;
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const devPort = readDevPort(env);
+  const devHost = readDevHost(env);
 
   return {
   plugins: [react(), tailwindcss()],
@@ -33,6 +45,7 @@ export default defineConfig(({ mode }) => {
   },
   clearScreen: false,
   server: {
+    host: devHost,
     port: devPort,
     strictPort: true,
     watch: {
