@@ -1,5 +1,5 @@
-import { useMemo, useState, useSyncExternalStore } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   DatePickerSheet,
@@ -16,11 +16,20 @@ import {
   NotFoundError,
   ValidationError,
 } from "@/features/database";
-import { homeStateService } from "@/features/home/state";
+import {
+  getActiveAccountId,
+  useActiveAccountId,
+} from "@/features/home/hooks/useActiveAccountId";
+import { logRemoteDev } from "@/features/home/utils/dev-log";
+import {
+  isValidEntityId,
+  shouldUseHomeMocks,
+} from "@/features/home/utils/home-persistence";
 import { createFinancialRecord } from "@/features/financial-records/application";
 import type { FinancialRecordType } from "@/features/financial-records/domain";
 import { useCreateRecordCatalogs } from "@/features/financial-records/hooks/useCreateRecordCatalogs";
 import { parseExpectedAmountToCents } from "@/features/financial-records/utils/parse-expected-amount";
+import { getPersistenceConfig } from "@/features/persistence-setup";
 
 const NONE_OPTION = "__none__";
 
@@ -73,19 +82,41 @@ function summarizeText(text: string, maxLength = 28): string {
 }
 
 function hasActiveWalletId(activeAccountId: string): boolean {
-  return activeAccountId.trim().length > 0;
+  if (!activeAccountId.trim()) {
+    return false;
+  }
+  if (shouldUseHomeMocks()) {
+    return true;
+  }
+  return isValidEntityId(activeAccountId);
+}
+
+interface CreateRecordLocationState {
+  walletId?: string;
 }
 
 export function CreateFinancialRecordPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationWalletId = (location.state as CreateRecordLocationState | null)
+    ?.walletId;
+
   const { categories, payees, isLoading, error: loadError } =
     useCreateRecordCatalogs();
 
-  const activeAccountId = useSyncExternalStore(
-    (listener) => homeStateService.subscribe(listener),
-    () => homeStateService.getState().activeAccountId,
-    () => homeStateService.getState().activeAccountId,
-  );
+  const activeAccountIdFromStore = useActiveAccountId();
+
+  const activeAccountId = useMemo(() => {
+    const storeId = activeAccountIdFromStore.trim();
+    if (storeId && isValidEntityId(storeId)) {
+      return storeId;
+    }
+    const navId = navigationWalletId?.trim();
+    if (navId && isValidEntityId(navId)) {
+      return navId;
+    }
+    return storeId || navId || "";
+  }, [activeAccountIdFromStore, navigationWalletId]);
 
   const hasActiveWallet = hasActiveWalletId(activeAccountId);
 
@@ -130,6 +161,11 @@ export function CreateFinancialRecordPage() {
       return;
     }
 
+    if (!shouldUseHomeMocks() && !isValidEntityId(activeAccountId)) {
+      setSaveError("Carteira inválida. Selecione uma carteira válida.");
+      return;
+    }
+
     const expectedAmount = parseExpectedAmountToCents(expectedAmountInput);
     if (expectedAmount == null) {
       setSaveError("Informe um valor previsto válido");
@@ -141,19 +177,62 @@ export function CreateFinancialRecordPage() {
       return;
     }
 
+    if (!shouldUseHomeMocks() && !isValidEntityId(categoryId)) {
+      setSaveError("Categoria inválida.");
+      return;
+    }
+
+    if (payeeId && !shouldUseHomeMocks() && !isValidEntityId(payeeId)) {
+      setSaveError("Favorecido inválido.");
+      return;
+    }
+
     setIsSaving(true);
 
-    try {
-      await createFinancialRecord({
-        walletId: activeAccountId,
-        type,
-        description: description.trim(),
-        categoryId,
-        dueDate,
-        expectedAmount,
-        payeeId,
-        recordNote: recordNote.trim() ? recordNote.trim() : null,
+    const walletId = getActiveAccountId().trim();
+    const resolvedWalletId =
+      walletId && isValidEntityId(walletId)
+        ? walletId
+        : activeAccountId.trim();
+
+    if (!shouldUseHomeMocks() && !isValidEntityId(resolvedWalletId)) {
+      setSaveError("Carteira inválida. Selecione uma carteira válida.");
+      setIsSaving(false);
+      return;
+    }
+
+    const payload = {
+      walletId: resolvedWalletId,
+      type,
+      description: description.trim(),
+      categoryId,
+      dueDate,
+      expectedAmount,
+      payeeId,
+      recordNote: recordNote.trim() ? recordNote.trim() : null,
+    };
+
+    if (import.meta.env.DEV) {
+      const config = getPersistenceConfig();
+      logRemoteDev("[CreateRecord] active walletId", {
+        storeWalletId: walletId,
+        resolvedWalletId: payload.walletId,
+        navigationWalletId,
+        activeAccountIdFromStore,
       });
+      logRemoteDev("[CreateRecord] payload.walletId", {
+        provider: config?.mode ?? "unknown",
+        remoteBaseUrl: config?.remoteBaseUrl,
+        walletId: payload.walletId,
+        categoryId: payload.categoryId,
+        payeeId: payload.payeeId,
+        endpoint: "POST /api/v1/financial-records",
+        payload,
+      });
+    }
+
+    try {
+      await createFinancialRecord(payload);
 
       navigate("/", {
         replace: true,

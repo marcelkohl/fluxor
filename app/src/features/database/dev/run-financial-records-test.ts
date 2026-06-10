@@ -23,6 +23,8 @@ import {
   revertPayment,
   updateFinancialRecord,
 } from "@/features/financial-records";
+import { homeStateService } from "@/features/home/state";
+import { getActiveAccountId } from "@/features/home/hooks/useActiveAccountId";
 import { createWallet } from "@/features/wallets";
 
 import type { DevTestBaseResult } from "./dev-test-context";
@@ -30,6 +32,7 @@ import type { DevTestBaseResult } from "./dev-test-context";
 export interface FinancialRecordsTestResult extends DevTestBaseResult {
   created?: {
     wallet: unknown;
+    walletB?: unknown;
     category: unknown;
     record: unknown;
     attachment?: unknown;
@@ -99,11 +102,24 @@ export async function runFinancialRecordsTest(): Promise<FinancialRecordsTestRes
 
   try {
     const wallet = await createWallet({
-      name: `Carteira Records ${suffix}`,
+      name: `Carteira A ${suffix}`,
       icon: "wallet",
       color: themeColorPalette[0],
     });
-    steps.push(step("createWallet", "ok"));
+    steps.push(step("createWalletA", "ok"));
+
+    const walletB = await createWallet({
+      name: `Carteira B ${suffix}`,
+      icon: "walletPiggyBank",
+      color: themeColorPalette[2],
+    });
+    steps.push(step("createWalletB", "ok"));
+
+    homeStateService.setActiveAccount(walletB.id);
+    if (getActiveAccountId() !== walletB.id) {
+      throw new Error("activeAccountId não reflete a carteira selecionada");
+    }
+    steps.push(step("selectWalletB", "ok"));
 
     const category = await createCategory({
       name: `Categoria Records ${suffix}`,
@@ -113,7 +129,7 @@ export async function runFinancialRecordsTest(): Promise<FinancialRecordsTestRes
     steps.push(step("createCategory", "ok"));
 
     const record = await createFinancialRecord({
-      walletId: wallet.id,
+      walletId: getActiveAccountId(),
       type: "payable",
       description: `Conta teste ${suffix}`,
       categoryId: category.id,
@@ -171,13 +187,22 @@ export async function runFinancialRecordsTest(): Promise<FinancialRecordsTestRes
         }),
     );
 
-    await runOptionalStep(steps, "appendHistoryEvent", () =>
-      appendHistoryEvent({
+    if (context.provider === "remote") {
+      steps.push(
+        step(
+          "appendHistoryEvent",
+          "skipped",
+          "Histórico gerado automaticamente pelo servidor",
+        ),
+      );
+    } else {
+      await appendHistoryEvent({
         recordId: updated.id,
         eventType: "alert_created",
         description: "Alerta configurado",
-      }),
-    );
+      });
+      steps.push(step("appendHistoryEvent", "ok"));
+    }
 
     const registered = await registerPayment({
       recordId: updated.id,
@@ -203,8 +228,19 @@ export async function runFinancialRecordsTest(): Promise<FinancialRecordsTestRes
     const history = await listHistoryByRecord(reverted.id);
     steps.push(step("listHistoryByRecord", "ok"));
 
-    const records = await listFinancialRecords({ walletId: wallet.id });
+    const records = await listFinancialRecords({ walletId: walletB.id });
     steps.push(step("listFinancialRecords", "ok"));
+
+    const recordsOnA = await listFinancialRecords({ walletId: wallet.id });
+    const recordsOnB = await listFinancialRecords({ walletId: walletB.id });
+    const recordOnB = recordsOnB.some((item) => item.id === reverted.id);
+    const recordOnA = recordsOnA.some((item) => item.id === reverted.id);
+    if (!recordOnB || recordOnA) {
+      throw new Error(
+        "Registro associado à carteira errada após seleção de walletB",
+      );
+    }
+    steps.push(step("walletFilterIsolation", "ok"));
 
     if (attachment) {
       await removeAttachment(attachment.id);
@@ -240,6 +276,7 @@ export async function runFinancialRecordsTest(): Promise<FinancialRecordsTestRes
       steps,
       created: {
         wallet,
+        walletB,
         category,
         record: reverted,
         attachment,

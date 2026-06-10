@@ -72,6 +72,9 @@ class InMemoryHomeStateService implements HomeStateService {
   }
 
   setActiveAccount(accountId: string): void {
+    if (import.meta.env.DEV) {
+      console.debug("[WalletSelection] selected walletId", accountId);
+    }
     this.state = { ...this.state, activeAccountId: accountId };
     this.emit();
   }

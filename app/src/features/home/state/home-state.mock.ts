@@ -5,7 +5,7 @@ const now = new Date();
 
 /** Estado operacional inicial da Home (memória). */
 export const initialHomeState: HomeState = {
-  activeAccountId: "account-pessoal",
+  activeAccountId: "",
   selectedMonth: now.getMonth() + 1,
   selectedYear: now.getFullYear(),
   activeWidgetId: "financial-summary",

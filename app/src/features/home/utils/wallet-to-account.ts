@@ -18,7 +18,7 @@ export function walletToAccountWallet(wallet: Wallet): AccountWallet {
 
 export const EMPTY_WALLET_PLACEHOLDER: AccountWallet = {
   id: "",
-  name: "Nenhuma carteira",
+  name: "Nenhuma carteira cadastrada",
   icon: DEFAULT_WALLET_ICON,
   color: DEFAULT_WALLET_COLOR,
 };

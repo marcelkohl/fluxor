@@ -25,6 +25,10 @@ export {
   FILTER_TYPE_LABELS,
   FILTER_TYPE_OPTIONS,
 } from "./home-filter-options";
+export {
+  isValidEntityId,
+  shouldUseHomeMocks,
+} from "./home-persistence";
 export { walletToAccountWallet, EMPTY_WALLET_PLACEHOLDER } from "./wallet-to-account";
 export { calculatePreviousBalanceCents } from "./calculate-previous-balance-cents";
 export {

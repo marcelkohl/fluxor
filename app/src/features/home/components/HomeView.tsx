@@ -5,6 +5,7 @@ import { ToastBanner } from "@/components/ToastBanner";
 import { exportHomeReport, HomeExportSheet } from "@/features/export";
 import type { HomeExportFormat } from "@/features/export";
 import { registerPayment } from "@/features/financial-records/application";
+import { getActiveAccountId } from "@/features/home/hooks/useActiveAccountId";
 import { useHomeContext } from "@/features/home/hooks/useHomeContext";
 import { useHomeFinancialRecords } from "@/features/home/hooks/useHomeFinancialRecords";
 import { useHomeWallets } from "@/features/home/hooks/useHomeWallets";
@@ -219,7 +220,13 @@ export function HomeView() {
     isBrowserFallback,
     highlightedDate,
     onOpenWalletPicker: () => setIsWalletPickerOpen(true),
-    onAddRecord: () => navigate("/records/new"),
+    onAddRecord: () => {
+      const walletId = getActiveAccountId();
+      if (import.meta.env.DEV) {
+        console.debug("[WalletSelection] navigate to create with walletId", walletId);
+      }
+      navigate("/records/new", { state: { walletId } });
+    },
     onPreviousMonth: () => homeStateService.shiftSelectedMonth(-1),
     onNextMonth: () => homeStateService.shiftSelectedMonth(1),
     onOpenExport: () => setIsExportOpen(true),

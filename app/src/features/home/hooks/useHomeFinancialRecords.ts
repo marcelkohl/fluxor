@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
-import { isTauri } from "@tauri-apps/api/core";
+import { useCallback, useEffect, useState } from "react";
 
+import { useActiveAccountId } from "@/features/home/hooks/useActiveAccountId";
 import type { ThemeIconName } from "@/config/theme";
 import { listCategories } from "@/features/categories/application";
 import { DatabaseNotReadyError } from "@/features/database";
@@ -9,12 +9,17 @@ import { listPayees } from "@/features/payees/application";
 import { mockFinancialData } from "@/features/home/mocks/home-context.mock";
 import { mockCategoriesById } from "@/features/home/mocks/categories.mock";
 import { mockPayeesById } from "@/features/home/mocks/records.mock";
-import { homeStateService } from "@/features/home/state";
 import type { Category, FinancialRecord, Payee } from "@/features/home/types";
+import { logRemoteDev } from "@/features/home/utils/dev-log";
+import {
+  isValidEntityId,
+  shouldUseHomeMocks,
+} from "@/features/home/utils/home-persistence";
 import {
   domainRecordToHomeRecord,
   todayIsoDate,
 } from "@/features/home/utils/domain-record-to-home-record";
+import { getPersistenceConfig } from "@/features/persistence-setup";
 
 export interface UseHomeFinancialRecordsResult {
   /** Todos os registros ativos da carteira selecionada (todos os meses). */
@@ -41,19 +46,14 @@ function getLoadErrorMessage(error: unknown): string {
 export function useHomeFinancialRecords(
   refreshKey?: string,
 ): UseHomeFinancialRecordsResult {
-  const isBrowserFallback = !isTauri();
-
-  const activeAccountId = useSyncExternalStore(
-    (listener) => homeStateService.subscribe(listener),
-    () => homeStateService.getState().activeAccountId,
-    () => homeStateService.getState().activeAccountId,
-  );
+  const usesMockData = shouldUseHomeMocks();
+  const activeAccountId = useActiveAccountId();
 
   const [records, setRecords] = useState<FinancialRecord[]>([]);
-  const [categoriesById, setCategoriesById] =
-    useState<Record<string, Category>>(mockCategoriesById);
-  const [payeesById, setPayeesById] =
-    useState<Record<string, Payee>>(mockPayeesById);
+  const [categoriesById, setCategoriesById] = useState<Record<string, Category>>(
+    {},
+  );
+  const [payeesById, setPayeesById] = useState<Record<string, Payee>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
@@ -62,12 +62,12 @@ export function useHomeFinancialRecords(
     setReloadToken((current) => current + 1);
   }, []);
 
-  const referenceDate = isBrowserFallback
+  const referenceDate = usesMockData
     ? mockFinancialData.referenceDate
     : todayIsoDate();
 
   useEffect(() => {
-    if (isBrowserFallback) {
+    if (usesMockData) {
       setRecords(
         mockFinancialData.records.filter(
           (record) => record.accountId === activeAccountId,
@@ -80,7 +80,7 @@ export function useHomeFinancialRecords(
       return;
     }
 
-    if (!activeAccountId.trim()) {
+    if (!isValidEntityId(activeAccountId)) {
       setRecords([]);
       setCategoriesById({});
       setPayeesById({});
@@ -135,11 +135,13 @@ export function useHomeFinancialRecords(
         );
 
         if (import.meta.env.DEV) {
-          console.debug("[HomeRecords] SQLite load", {
-            activeAccountId,
+          const config = getPersistenceConfig();
+          logRemoteDev("HomeRecords load", {
+            provider: config?.mode ?? "unknown",
+            remoteBaseUrl: config?.remoteBaseUrl,
+            walletId: activeAccountId,
             listCount: domainRecords.length,
-            dueDates: domainRecords.map((record) => record.dueDate),
-            walletIds: [...new Set(domainRecords.map((record) => record.walletId))],
+            endpoint: `GET /api/v1/financial-records?walletId=${activeAccountId}`,
           });
         }
       } catch (loadError) {
@@ -161,7 +163,7 @@ export function useHomeFinancialRecords(
     return () => {
       cancelled = true;
     };
-  }, [activeAccountId, isBrowserFallback, refreshKey, reloadToken]);
+  }, [activeAccountId, refreshKey, reloadToken, usesMockData]);
 
   return {
     records,
@@ -170,7 +172,7 @@ export function useHomeFinancialRecords(
     referenceDate,
     isLoading,
     error,
-    isBrowserFallback,
+    isBrowserFallback: usesMockData,
     reload,
   };
 }
