@@ -68,7 +68,13 @@ export function RecordItem({
 
   const content = (
     <>
-      {category ? <CategoryIcon category={category} /> : null}
+      {category ? (
+        <CategoryIcon
+          category={category}
+          hasDocument={record.hasDocument}
+          hasReceipt={record.hasReceipt}
+        />
+      ) : null}
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-text-primary">

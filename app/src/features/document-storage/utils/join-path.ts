@@ -16,11 +16,35 @@ export function joinPathSegments(...segments: string[]): string {
     return "";
   }
 
-  const usesBackslash = filtered.some((segment) => segment.includes("\\"));
+  const first = filtered[0];
+  const isAbsoluteUnix = first.startsWith("/");
+  const windowsDriveMatch = /^([A-Za-z]:)[/\\]?/.exec(first);
+  const usesBackslash =
+    windowsDriveMatch != null || filtered.some((segment) => segment.includes("\\"));
   const separator = usesBackslash ? "\\" : "/";
 
-  return filtered
+  const parts = filtered
     .flatMap((segment) => segment.split(/[/\\]+/))
-    .filter(Boolean)
-    .join(separator);
+    .filter(Boolean);
+
+  if (isAbsoluteUnix) {
+    return `/${parts.join(separator)}`;
+  }
+
+  if (windowsDriveMatch) {
+    const drive = windowsDriveMatch[1];
+    const drivePrefix = `${drive}${separator}`;
+    const remainder = first.slice(windowsDriveMatch[0].length);
+    const firstParts = remainder
+      ? remainder.split(/[/\\]+/).filter(Boolean)
+      : [];
+    const otherParts = filtered
+      .slice(1)
+      .flatMap((segment) => segment.split(/[/\\]+/))
+      .filter(Boolean);
+
+    return `${drivePrefix}${[...firstParts, ...otherParts].join(separator)}`;
+  }
+
+  return parts.join(separator);
 }

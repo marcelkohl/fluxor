@@ -659,10 +659,31 @@ createAttachment() → AttachmentRepositoryPort
 **Template de organização (V1):**
 
 ```text
-/{wallet}/{year}/{month-name}/{filename-based-on-description}.{extension}
+/{wallet}/{year}/{month-name}/{kind-prefix}{filename-based-on-description}.{extension}
 ```
 
-Exemplo: `/pessoal/2026/julho/energia eletrica.pdf`
+Prefixos do nome físico:
+
+| Tipo | Prefixo |
+|---|---|
+| `document` | `doc-` |
+| `receipt` | `rec-` |
+
+O `attachment.filename` na UI permanece o nome original selecionado pelo usuário (ex.: `conta_julho.pdf`). Apenas o arquivo copiado na pasta raiz recebe o prefixo.
+
+Exemplos (descrição do registro: *Energia Elétrica*, extensão do arquivo selecionado: `.pdf`):
+
+```text
+/pessoal/2026/julho/doc-energia eletrica.pdf
+/pessoal/2026/julho/rec-energia eletrica.pdf
+```
+
+Colisão:
+
+```text
+/pessoal/2026/julho/doc-energia eletrica (2).pdf
+/pessoal/2026/julho/rec-energia eletrica (2).pdf
+```
 
 **Comportamento:**
 

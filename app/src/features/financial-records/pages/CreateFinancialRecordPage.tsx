@@ -29,6 +29,7 @@ import { createFinancialRecord } from "@/features/financial-records/application"
 import type { FinancialRecordType } from "@/features/financial-records/domain";
 import { useCreateRecordCatalogs } from "@/features/financial-records/hooks/useCreateRecordCatalogs";
 import { parseExpectedAmountToCents } from "@/features/financial-records/utils/parse-expected-amount";
+import { ATTACH_UNSAVED_RECORD_MESSAGE } from "@/features/document-storage/types/attachment-operation-state";
 import { getPersistenceConfig } from "@/features/persistence-setup";
 
 const NONE_OPTION = "__none__";
@@ -289,6 +290,10 @@ export function CreateFinancialRecordPage() {
             {saveError}
           </p>
         ) : null}
+
+        <p className="mb-4 rounded-lg border border-border bg-surface-soft px-3 py-2 text-sm text-text-secondary">
+          {ATTACH_UNSAVED_RECORD_MESSAGE}
+        </p>
 
         {isLoading ? (
           <p className="py-8 text-center text-sm text-text-secondary">

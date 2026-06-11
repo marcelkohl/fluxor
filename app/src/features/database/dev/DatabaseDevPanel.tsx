@@ -18,6 +18,10 @@ import {
   type AttachmentsTestResult,
 } from "./run-attachments-test";
 import {
+  runStorageAccessTest,
+  type StorageAccessTestResult,
+} from "./run-storage-access-test";
+import {
   runBasicCatalogTest,
   type BasicCatalogTestResult,
 } from "./run-basic-catalog-test";
@@ -96,12 +100,15 @@ export function DatabaseDevPanel() {
   const [runningCatalogTest, setRunningCatalogTest] = useState(false);
   const [runningRecordsTest, setRunningRecordsTest] = useState(false);
   const [runningAttachmentsTest, setRunningAttachmentsTest] = useState(false);
+  const [runningStorageAccessTest, setRunningStorageAccessTest] = useState(false);
   const [catalogTestResult, setCatalogTestResult] =
     useState<BasicCatalogTestResult | null>(null);
   const [recordsTestResult, setRecordsTestResult] =
     useState<FinancialRecordsTestResult | null>(null);
   const [attachmentsTestResult, setAttachmentsTestResult] =
     useState<AttachmentsTestResult | null>(null);
+  const [storageAccessTestResult, setStorageAccessTestResult] =
+    useState<StorageAccessTestResult | null>(null);
 
   const refreshDiagnostics = useCallback(async () => {
     setLoadingDiagnostics(true);
@@ -182,6 +189,16 @@ export function DatabaseDevPanel() {
       await refreshDiagnostics();
     } finally {
       setRunningAttachmentsTest(false);
+    }
+  }
+
+  async function handleRunStorageAccessTest() {
+    setRunningStorageAccessTest(true);
+    try {
+      const result = await runStorageAccessTest();
+      setStorageAccessTestResult(result);
+    } finally {
+      setRunningStorageAccessTest(false);
     }
   }
 
@@ -300,6 +317,7 @@ export function DatabaseDevPanel() {
             runningCatalogTest ||
             runningRecordsTest ||
             runningAttachmentsTest ||
+            runningStorageAccessTest ||
             !config
           }
           onClick={() => void handleRunCatalogTest()}
@@ -315,6 +333,7 @@ export function DatabaseDevPanel() {
             runningCatalogTest ||
             runningRecordsTest ||
             runningAttachmentsTest ||
+            runningStorageAccessTest ||
             !config
           }
           onClick={() => void handleRunRecordsTest()}
@@ -330,6 +349,7 @@ export function DatabaseDevPanel() {
             runningCatalogTest ||
             runningRecordsTest ||
             runningAttachmentsTest ||
+            runningStorageAccessTest ||
             !config
           }
           onClick={() => void handleRunAttachmentsTest()}
@@ -338,6 +358,21 @@ export function DatabaseDevPanel() {
           {runningAttachmentsTest
             ? "Executando teste…"
             : "Testar attachments"}
+        </button>
+        <button
+          type="button"
+          disabled={
+            runningCatalogTest ||
+            runningRecordsTest ||
+            runningAttachmentsTest ||
+            runningStorageAccessTest
+          }
+          onClick={() => void handleRunStorageAccessTest()}
+          className="w-full rounded-lg bg-action-gradient px-4 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {runningStorageAccessTest
+            ? "Executando teste…"
+            : "Testar storage local"}
         </button>
       </section>
 
@@ -359,6 +394,13 @@ export function DatabaseDevPanel() {
         <TestResultBlock
           title="Resultado — attachments"
           result={attachmentsTestResult}
+        />
+      )}
+
+      {storageAccessTestResult && (
+        <TestResultBlock
+          title="Resultado — storage local"
+          result={storageAccessTestResult}
         />
       )}
     </div>

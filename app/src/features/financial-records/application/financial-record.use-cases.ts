@@ -470,6 +470,36 @@ export async function listAttachmentsByRecord(
   return attachments.listByRecord(recordId);
 }
 
+export interface AttachmentKindFlags {
+  hasDocument: boolean;
+  hasReceipt: boolean;
+}
+
+export async function summarizeAttachmentKindsByRecordIds(
+  recordIds: string[],
+): Promise<Record<string, AttachmentKindFlags>> {
+  if (recordIds.length === 0) {
+    return {};
+  }
+
+  const { attachments } = await resolvePersistence();
+  const entries = await Promise.all(
+    recordIds.map(async (recordId) => {
+      const items = await attachments.listByRecord(recordId);
+
+      return [
+        recordId,
+        {
+          hasDocument: items.some((item) => item.kind === "document"),
+          hasReceipt: items.some((item) => item.kind === "receipt"),
+        },
+      ] as const;
+    }),
+  );
+
+  return Object.fromEntries(entries);
+}
+
 export interface AppendHistoryEventInput {
   recordId: string;
   eventType: HistoryEventType;

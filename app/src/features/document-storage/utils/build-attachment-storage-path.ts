@@ -4,11 +4,19 @@ import {
   sanitizePathSegment,
 } from "./path-sanitizer";
 
+export type StorageAttachmentKind = "document" | "receipt";
+
+const STORAGE_KIND_PREFIX: Record<StorageAttachmentKind, string> = {
+  document: "doc-",
+  receipt: "rec-",
+};
+
 export interface AttachmentStoragePathInput {
   walletName: string;
   dueDate: string;
   recordDescription: string;
   sourceFilename: string;
+  kind: StorageAttachmentKind;
 }
 
 export interface AttachmentStoragePathResult {
@@ -37,13 +45,19 @@ function parseDueDate(dueDate: string): { year: number; month: number } {
   return { year, month };
 }
 
+export function getStorageKindPrefix(kind: StorageAttachmentKind): string {
+  return STORAGE_KIND_PREFIX[kind];
+}
+
 export function buildAttachmentFilename(
   recordDescription: string,
   sourceFilename: string,
+  kind: StorageAttachmentKind,
 ): string {
   const extension = getFileExtension(sourceFilename);
   const descriptionBase = sanitizeFilenameBase(recordDescription);
-  return extension ? `${descriptionBase}.${extension}` : descriptionBase;
+  const prefixedBase = `${getStorageKindPrefix(kind)}${descriptionBase}`;
+  return extension ? `${prefixedBase}.${extension}` : prefixedBase;
 }
 
 export function buildAttachmentStoragePath(
@@ -56,6 +70,7 @@ export function buildAttachmentStoragePath(
   const filename = buildAttachmentFilename(
     input.recordDescription,
     input.sourceFilename,
+    input.kind,
   );
   const relativePath = `${walletSegment}/${yearSegment}/${monthSegment}/${filename}`;
 

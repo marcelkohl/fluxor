@@ -4,7 +4,7 @@ import { useActiveAccountId } from "@/features/home/hooks/useActiveAccountId";
 import type { ThemeIconName } from "@/config/theme";
 import { listCategories } from "@/features/categories/application";
 import { DatabaseNotReadyError } from "@/features/database";
-import { listFinancialRecords } from "@/features/financial-records/application";
+import { listFinancialRecords, summarizeAttachmentKindsByRecordIds } from "@/features/financial-records/application";
 import { listPayees } from "@/features/payees/application";
 import { mockFinancialData } from "@/features/home/mocks/home-context.mock";
 import { mockCategoriesById } from "@/features/home/mocks/categories.mock";
@@ -107,10 +107,22 @@ export function useHomeFinancialRecords(
           return;
         }
 
+        const attachmentFlags = await summarizeAttachmentKindsByRecordIds(
+          domainRecords.map((record) => record.id),
+        );
+
         setRecords(
-          domainRecords.map((record) =>
-            domainRecordToHomeRecord(record, refDate),
-          ),
+          domainRecords.map((record) => {
+            const flags = attachmentFlags[record.id] ?? {
+              hasDocument: false,
+              hasReceipt: false,
+            };
+
+            return {
+              ...domainRecordToHomeRecord(record, refDate),
+              ...flags,
+            };
+          }),
         );
         setCategoriesById(
           Object.fromEntries(

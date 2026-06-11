@@ -5,37 +5,54 @@ import {
   shouldUseCategoryAsset,
 } from "@/config/theme";
 
+import { AttachmentStatusChecks } from "./AttachmentStatusCheck";
+
 interface CategoryIconProps {
   category: Category;
+  hasDocument?: boolean;
+  hasReceipt?: boolean;
 }
 
-export function CategoryIcon({ category }: CategoryIconProps) {
+export function CategoryIcon({
+  category,
+  hasDocument = false,
+  hasReceipt = false,
+}: CategoryIconProps) {
   const categoryKey = category.icon.replace("category", "").toLowerCase();
   const useAsset = shouldUseCategoryAsset(categoryKey);
 
   if (useAsset) {
     return (
-      <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full"
-        style={{ backgroundColor: `${category.color}22` }}
-        aria-hidden
-      >
-        <img
-          src={resolveCategoryIconAsset(categoryKey)}
-          alt=""
-          className="h-5 w-5 object-contain"
+      <span className="relative h-9 w-9 shrink-0">
+        <span
+          className="flex h-full w-full items-center justify-center overflow-hidden rounded-full"
+          style={{ backgroundColor: `${category.color}22` }}
+          aria-hidden
+        >
+          <img
+            src={resolveCategoryIconAsset(categoryKey)}
+            alt=""
+            className="h-5 w-5 object-contain"
+          />
+        </span>
+        <AttachmentStatusChecks
+          hasDocument={hasDocument}
+          hasReceipt={hasReceipt}
         />
       </span>
     );
   }
 
   return (
-    <span
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-      style={{ backgroundColor: `${category.color}22`, color: category.color }}
-      aria-hidden
-    >
-      <ThemeIcon name={category.icon} size="sm" />
+    <span className="relative h-9 w-9 shrink-0">
+      <span
+        className="flex h-full w-full items-center justify-center rounded-full"
+        style={{ backgroundColor: `${category.color}22`, color: category.color }}
+        aria-hidden
+      >
+        <ThemeIcon name={category.icon} size="sm" />
+      </span>
+      <AttachmentStatusChecks hasDocument={hasDocument} hasReceipt={hasReceipt} />
     </span>
   );
 }

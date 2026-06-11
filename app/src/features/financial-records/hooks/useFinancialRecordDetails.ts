@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { listCategories } from "@/features/categories/application";
 import type { Category } from "@/features/categories/domain";
@@ -64,10 +64,15 @@ export function useFinancialRecordDetails(
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const hasLoadedRef = useRef(false);
 
   const reload = useCallback(() => {
     setRefreshKey((current) => current + 1);
   }, []);
+
+  useEffect(() => {
+    hasLoadedRef.current = false;
+  }, [recordId]);
 
   useEffect(() => {
     if (!recordId?.trim()) {
@@ -75,17 +80,21 @@ export function useFinancialRecordDetails(
       setError("Registro inválido");
       setNotFound(false);
       setIsLoading(false);
+      hasLoadedRef.current = false;
       return;
     }
 
     let cancelled = false;
     const id = recordId.trim();
+    const isBackgroundRefresh = hasLoadedRef.current;
 
     async function load() {
-      setIsLoading(true);
-      setError(null);
-      setNotFound(false);
-      setData(null);
+      if (!isBackgroundRefresh) {
+        setIsLoading(true);
+        setError(null);
+        setNotFound(false);
+        setData(null);
+      }
 
       try {
         const referenceDate = todayIsoDate();
@@ -126,10 +135,15 @@ export function useFinancialRecordDetails(
           displayStatus: deriveDisplayStatus(record, referenceDate),
           referenceDate,
         });
+        setError(null);
+        setNotFound(false);
+        hasLoadedRef.current = true;
       } catch (loadError) {
         if (!cancelled) {
-          setError(getLoadErrorMessage(loadError));
-          setNotFound(loadError instanceof NotFoundError);
+          if (!isBackgroundRefresh) {
+            setError(getLoadErrorMessage(loadError));
+            setNotFound(loadError instanceof NotFoundError);
+          }
         }
       } finally {
         if (!cancelled) {

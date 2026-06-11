@@ -1,0 +1,3 @@
+# Ignora arquivos criados por engano com caminho relativo durante dev.
+# (ex.: home/marcel/... dentro de src-tauri)
+home/

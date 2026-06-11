@@ -45,6 +45,31 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+export function formatMimeTypeShort(mimeType: string): string {
+  const normalized = mimeType.trim().toLowerCase();
+  const known: Record<string, string> = {
+    "application/pdf": "PDF",
+    "image/png": "PNG",
+    "image/jpeg": "JPEG",
+    "image/jpg": "JPEG",
+    "image/webp": "WEBP",
+    "image/gif": "GIF",
+    "text/plain": "TXT",
+    "application/msword": "DOC",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      "DOCX",
+    "application/vnd.ms-excel": "XLS",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "XLSX",
+  };
+
+  if (known[normalized]) {
+    return known[normalized];
+  }
+
+  const subtype = normalized.split("/")[1];
+  return subtype ? subtype.toUpperCase() : mimeType.toUpperCase();
+}
+
 export function getStatusColorClass(status: FinancialRecordStatus): string {
   switch (status) {
     case "completed":

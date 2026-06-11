@@ -1,8 +1,8 @@
 export class DesktopOnlyStorageError extends Error {
-  constructor() {
-    super(
-      "Seleção de arquivos disponível apenas no aplicativo desktop nesta etapa.",
-    );
+  constructor(
+    message = "Seleção de arquivos disponível apenas no aplicativo desktop nesta etapa.",
+  ) {
+    super(message);
     this.name = "DesktopOnlyStorageError";
   }
 }

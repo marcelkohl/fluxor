@@ -15,11 +15,13 @@ export {
   registerPayment,
   removeAttachment,
   revertPayment,
+  summarizeAttachmentKindsByRecordIds,
   updateFinancialRecord,
 } from "./financial-record.use-cases";
 
 export type {
   AppendHistoryEventInput,
+  AttachmentKindFlags,
   CreateAttachmentInput,
   CreateFinancialRecordInput,
   CreateRecurrenceBatchInput,

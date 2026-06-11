@@ -4,11 +4,13 @@ export interface StoreFileInput {
   dueDate: string;
   recordDescription: string;
   sourceFilename: string;
+  kind: "document" | "receipt";
 }
 
 export interface StoreFileResult {
   localPath: string;
-  filename: string;
+  /** Nome do arquivo físico gerado (com prefixo doc-/rec-). */
+  storedFilename: string;
   size: number;
   mimeType: string;
 }
