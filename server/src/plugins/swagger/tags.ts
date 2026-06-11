@@ -23,6 +23,11 @@ export const API_TAGS = [
     name: "History",
     description: "Timeline de eventos dos registros financeiros.",
   },
+  {
+    name: "Attachments",
+    description:
+      "Metadados de anexos — referências externas a arquivos (sem upload).",
+  },
 ] as const;
 
 export type ApiTagName = (typeof API_TAGS)[number]["name"];

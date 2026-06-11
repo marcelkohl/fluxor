@@ -5,6 +5,8 @@ import type {
   FastifyRequest,
 } from "fastify";
 import type { ApiErrorResponse } from "@fluxor/contracts";
+import { AttachmentNotFoundError } from "../attachments/errors/attachment-not-found.error.js";
+import { AttachmentValidationError } from "../attachments/errors/attachment-validation.error.js";
 import { CategoryNotFoundError } from "../categories/errors/category-not-found.error.js";
 import { CategoryValidationError } from "../categories/errors/category-validation.error.js";
 import { FinancialRecordAlreadyCompletedError } from "../financial-records/errors/financial-record-already-completed.error.js";
@@ -61,6 +63,14 @@ export function registerErrorHandler(app: FastifyInstance): void {
         return;
       }
 
+      if (error instanceof AttachmentNotFoundError) {
+        sendError(reply, 404, {
+          code: "attachment_not_found",
+          message: "Attachment not found",
+        });
+        return;
+      }
+
       if (error instanceof FinancialRecordAlreadyCompletedError) {
         sendError(reply, 409, {
           code: "financial_record_already_completed",
@@ -97,7 +107,8 @@ export function registerErrorHandler(app: FastifyInstance): void {
         error instanceof WalletValidationError ||
         error instanceof CategoryValidationError ||
         error instanceof PayeeValidationError ||
-        error instanceof FinancialRecordValidationError
+        error instanceof FinancialRecordValidationError ||
+        error instanceof AttachmentValidationError
       ) {
         sendError(reply, 400, {
           code: error.code,

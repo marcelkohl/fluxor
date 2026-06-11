@@ -12,11 +12,13 @@ import {
   getFinancialRecordRouteDoc,
   listFinancialRecordsRouteDoc,
   listFinancialRecordHistoryRouteDoc,
+  listAttachmentsByRecordRouteDoc,
   registerPaymentRouteDoc,
   revertPaymentRouteDoc,
   updateFinancialRecordRouteDoc,
 } from "../plugins/swagger/index.js";
 import { ListFinancialRecordHistoryUseCase } from "../financial-records/use-cases/list-financial-record-history.use-case.js";
+import { ListAttachmentsByRecordUseCase } from "../attachments/use-cases/list-attachments-by-record.use-case.js";
 import { ArchiveFinancialRecordUseCase } from "../financial-records/use-cases/archive-financial-record.use-case.js";
 import { CreateFinancialRecordUseCase } from "../financial-records/use-cases/create-financial-record.use-case.js";
 import { GetFinancialRecordUseCase } from "../financial-records/use-cases/get-financial-record.use-case.js";
@@ -27,6 +29,10 @@ import { UpdateFinancialRecordUseCase } from "../financial-records/use-cases/upd
 
 interface FinancialRecordIdParams {
   id: EntityId;
+}
+
+interface FinancialRecordAttachmentsParams {
+  recordId: EntityId;
 }
 
 export const financialRecordsRoute: FastifyPluginAsync = async (app) => {
@@ -44,12 +50,25 @@ export const financialRecordsRoute: FastifyPluginAsync = async (app) => {
     records,
     persistence.financialRecordHistory,
   );
+  const listAttachments = new ListAttachmentsByRecordUseCase(
+    persistence.attachments,
+    records,
+  );
 
   app.get(
     "/",
     { schema: listFinancialRecordsRouteDoc },
     async (request) =>
       listRecords.execute(request.query as ListFinancialRecordsRequest),
+  );
+
+  app.get(
+    "/:recordId/attachments",
+    { schema: listAttachmentsByRecordRouteDoc },
+    async (request) =>
+      listAttachments.execute(
+        (request.params as FinancialRecordAttachmentsParams).recordId,
+      ),
   );
 
   app.get(

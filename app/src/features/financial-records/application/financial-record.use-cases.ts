@@ -425,6 +425,17 @@ export async function removeAttachment(attachmentId: string): Promise<Attachment
   return attachments.remove(attachmentId);
 }
 
+export async function getAttachmentById(attachmentId: string): Promise<Attachment> {
+  const { attachments } = await resolvePersistence();
+
+  const attachment = await attachments.getById(attachmentId);
+  if (!attachment) {
+    throw new NotFoundError("Anexo não encontrado");
+  }
+
+  return attachment;
+}
+
 export async function listAttachmentsByRecord(
   recordId: string,
 ): Promise<Attachment[]> {

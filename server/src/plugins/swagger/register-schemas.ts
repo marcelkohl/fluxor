@@ -5,6 +5,11 @@ import {
   statusResponseSchema,
 } from "./schemas/status.schemas.js";
 import {
+  attachmentResponseSchema,
+  createAttachmentRequestSchema,
+  listAttachmentsResponseSchema,
+} from "./schemas/attachments.schemas.js";
+import {
   categoryResponseSchema,
   createCategoryRequestSchema,
   listCategoriesResponseSchema,
@@ -64,4 +69,7 @@ export function registerOpenApiSchemas(app: FastifyInstance): void {
   app.addSchema(revertPaymentRequestSchema);
   app.addSchema(financialRecordHistoryResponseSchema);
   app.addSchema(listHistoryResponseSchema);
+  app.addSchema(attachmentResponseSchema);
+  app.addSchema(createAttachmentRequestSchema);
+  app.addSchema(listAttachmentsResponseSchema);
 }

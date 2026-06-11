@@ -1,14 +1,11 @@
 import { RemoteFeatureNotSupportedError } from "@/features/persistence/errors/remote-feature-not-supported.error";
 import type {
-  AttachmentRepositoryPort,
   PayeeDocumentRepositoryPort,
   PayeePaymentMethodRepositoryPort,
   RecurrenceBatchRepositoryPort,
   TransferLinkRepositoryPort,
 } from "@/features/persistence/ports";
 import type {
-  Attachment,
-  CreateAttachmentData,
   CreateRecurrenceBatchData,
   CreateTransferLinkData,
   RecurrenceBatch,
@@ -23,24 +20,6 @@ import type {
 
 function notSupported(feature: string): never {
   throw new RemoteFeatureNotSupportedError(feature);
-}
-
-export class RemoteAttachmentRepository implements AttachmentRepositoryPort {
-  async create(_data: CreateAttachmentData): Promise<Attachment> {
-    return notSupported("attachments.create");
-  }
-
-  async remove(_id: string): Promise<Attachment> {
-    return notSupported("attachments.remove");
-  }
-
-  async getById(_id: string): Promise<Attachment | null> {
-    return null;
-  }
-
-  async listByRecord(_recordId: string): Promise<Attachment[]> {
-    return [];
-  }
 }
 
 export class RemoteTransferLinkRepository implements TransferLinkRepositoryPort {

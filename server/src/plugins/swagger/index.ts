@@ -46,6 +46,10 @@ export async function registerSwaggerUi(app: FastifyInstance): Promise<void> {
 export { OPENAPI_JSON_PATH, SWAGGER_UI_PATH } from "./openapi.config.js";
 export { API_TAGS } from "./tags.js";
 export {
+  createAttachmentRouteDoc,
+  getAttachmentRouteDoc,
+  listAttachmentsByRecordRouteDoc,
+  removeAttachmentRouteDoc,
   archiveCategoryRouteDoc,
   archiveFinancialRecordRouteDoc,
   archivePayeeRouteDoc,

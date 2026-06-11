@@ -215,15 +215,7 @@ export async function runFinancialRecordsTest(): Promise<FinancialRecordsTestRes
     steps.push(step("revertPayment", "ok"));
 
     const attachments = await listAttachmentsByRecord(updated.id);
-    steps.push(
-      step(
-        "listAttachmentsByRecord",
-        context.provider === "remote" ? "skipped" : "ok",
-        context.provider === "remote"
-          ? "Retorna lista vazia no remoto (não suportado)"
-          : undefined,
-      ),
-    );
+    steps.push(step("listAttachmentsByRecord", "ok"));
 
     const history = await listHistoryByRecord(reverted.id);
     steps.push(step("listHistoryByRecord", "ok"));

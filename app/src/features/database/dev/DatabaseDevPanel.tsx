@@ -14,6 +14,10 @@ import {
 } from "@/features/persistence-setup";
 
 import {
+  runAttachmentsTest,
+  type AttachmentsTestResult,
+} from "./run-attachments-test";
+import {
   runBasicCatalogTest,
   type BasicCatalogTestResult,
 } from "./run-basic-catalog-test";
@@ -91,10 +95,13 @@ export function DatabaseDevPanel() {
   const [loadingDiagnostics, setLoadingDiagnostics] = useState(true);
   const [runningCatalogTest, setRunningCatalogTest] = useState(false);
   const [runningRecordsTest, setRunningRecordsTest] = useState(false);
+  const [runningAttachmentsTest, setRunningAttachmentsTest] = useState(false);
   const [catalogTestResult, setCatalogTestResult] =
     useState<BasicCatalogTestResult | null>(null);
   const [recordsTestResult, setRecordsTestResult] =
     useState<FinancialRecordsTestResult | null>(null);
+  const [attachmentsTestResult, setAttachmentsTestResult] =
+    useState<AttachmentsTestResult | null>(null);
 
   const refreshDiagnostics = useCallback(async () => {
     setLoadingDiagnostics(true);
@@ -164,6 +171,17 @@ export function DatabaseDevPanel() {
       await refreshDiagnostics();
     } finally {
       setRunningRecordsTest(false);
+    }
+  }
+
+  async function handleRunAttachmentsTest() {
+    setRunningAttachmentsTest(true);
+    try {
+      const result = await runAttachmentsTest();
+      setAttachmentsTestResult(result);
+      await refreshDiagnostics();
+    } finally {
+      setRunningAttachmentsTest(false);
     }
   }
 
@@ -278,7 +296,12 @@ export function DatabaseDevPanel() {
       <section className="rounded-xl border border-border bg-surface p-4 space-y-3">
         <button
           type="button"
-          disabled={runningCatalogTest || runningRecordsTest || !config}
+          disabled={
+            runningCatalogTest ||
+            runningRecordsTest ||
+            runningAttachmentsTest ||
+            !config
+          }
           onClick={() => void handleRunCatalogTest()}
           className="w-full rounded-lg bg-action-gradient px-4 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
         >
@@ -288,13 +311,33 @@ export function DatabaseDevPanel() {
         </button>
         <button
           type="button"
-          disabled={runningCatalogTest || runningRecordsTest || !config}
+          disabled={
+            runningCatalogTest ||
+            runningRecordsTest ||
+            runningAttachmentsTest ||
+            !config
+          }
           onClick={() => void handleRunRecordsTest()}
           className="w-full rounded-lg bg-action-gradient px-4 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {runningRecordsTest
             ? "Executando teste…"
             : "Testar registros financeiros"}
+        </button>
+        <button
+          type="button"
+          disabled={
+            runningCatalogTest ||
+            runningRecordsTest ||
+            runningAttachmentsTest ||
+            !config
+          }
+          onClick={() => void handleRunAttachmentsTest()}
+          className="w-full rounded-lg bg-action-gradient px-4 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {runningAttachmentsTest
+            ? "Executando teste…"
+            : "Testar attachments"}
         </button>
       </section>
 
@@ -309,6 +352,13 @@ export function DatabaseDevPanel() {
         <TestResultBlock
           title="Resultado — registros financeiros"
           result={recordsTestResult}
+        />
+      )}
+
+      {attachmentsTestResult && (
+        <TestResultBlock
+          title="Resultado — attachments"
+          result={attachmentsTestResult}
         />
       )}
     </div>

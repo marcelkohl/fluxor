@@ -5,6 +5,7 @@ export {
   createFinancialRecord,
   createRecurrenceBatch,
   createTransferLink,
+  getAttachmentById,
   getFinancialRecordById,
   getRecurrenceBatch,
   getTransferLink,

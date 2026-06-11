@@ -1,3 +1,4 @@
+import { MariadbAttachmentRepository } from "../adapters/mariadb/mariadb-attachment.repository.js";
 import { MariadbCategoryRepository } from "../adapters/mariadb/mariadb-category.repository.js";
 import { MariadbFinancialRecordHistoryRepository } from "../adapters/mariadb/mariadb-financial-record-history.repository.js";
 import { MariadbFinancialRecordRepository } from "../adapters/mariadb/mariadb-financial-record.repository.js";
@@ -13,6 +14,7 @@ export function createMariadbPersistenceProvider(): PersistenceProvider {
     categories: new MariadbCategoryRepository(),
     payees: new MariadbPayeeRepository(),
     financialRecords: new MariadbFinancialRecordRepository(financialRecordHistory),
+    attachments: new MariadbAttachmentRepository(),
     financialRecordHistory,
   };
 }

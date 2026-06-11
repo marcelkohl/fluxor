@@ -1,4 +1,13 @@
 export {
+  attachmentResponseSchema,
+  createAttachmentRequestSchema,
+  createAttachmentRouteDoc,
+  getAttachmentRouteDoc,
+  listAttachmentsByRecordRouteDoc,
+  listAttachmentsResponseSchema,
+  removeAttachmentRouteDoc,
+} from "./attachments.schemas.js";
+export {
   financialRecordHistoryResponseSchema,
   listFinancialRecordHistoryRouteDoc,
   listHistoryResponseSchema,

@@ -1,5 +1,9 @@
 export { DatabaseDevPanel } from "./DatabaseDevPanel";
 export {
+  runAttachmentsTest,
+  type AttachmentsTestResult,
+} from "./run-attachments-test";
+export {
   runBasicCatalogTest,
   type BasicCatalogTestResult,
 } from "./run-basic-catalog-test";
