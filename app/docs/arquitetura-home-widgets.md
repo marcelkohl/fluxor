@@ -2,7 +2,7 @@
 
 > Documentação técnica interna. Registra decisões tomadas até a etapa atual para orientar implementações futuras e evitar desvios de escopo.
 
-**Última atualização:** junho/2026 · **Estágio:** Home integrada com SQLite + widgets modulares implementados
+**Última atualização:** junho/2026 · **Estágio:** Home integrada com persistência local ou remota + widgets modulares implementados
 
 ---
 
@@ -36,7 +36,7 @@ A Home **não** é uma lista genérica de transações. Ela é uma visão **cont
 
 | Eixo | Descrição | Estado atual |
 |---|---|---|
-| **Carteira ativa** | Toda a Home opera sobre uma única carteira selecionada | SQLite via `useHomeWallets` |
+| **Carteira ativa** | Toda a Home opera sobre uma única carteira selecionada | `useHomeWallets` (SQLite ou Remote API) |
 | **Mês selecionado** | Registros e totais respeitam o mês em exibição | Estado em `homeStateService` |
 | **Filtros ativos** | Restrições adicionais sobre o que é exibido | `applyHomeFilters` sobre registros do mês |
 
@@ -110,7 +110,7 @@ O hook `useHomeContext` (`src/features/home/hooks/useHomeContext.ts`) é o ponto
 ### Seletor de carteira
 
 - Exibe o nome da carteira ativa com seta para baixo.
-- Lista carteiras carregadas do SQLite via `useHomeWallets`.
+- Lista carteiras carregadas via `useHomeWallets` (independente do adapter de persistência).
 - Troca de carteira atualiza `homeStateService.activeAccountId`.
 
 ### Regras
@@ -151,12 +151,13 @@ O hook `useHomeContext` (`src/features/home/hooks/useHomeContext.ts`) é o ponto
 ### Princípios
 
 1. **Widgets são módulos independentes** — cada um vive em sua própria pasta em `src/features/widgets/widgets/`.
-2. **Registro centralizado** — todo widget deve ser declarado em `src/features/widgets/registry/widget-registry.ts`.
-3. **Recebem `HomeWidgetContext`** — dados já processados pela Home; interface `WidgetProps { context: HomeWidgetContext }`.
-4. **Isolamento de persistência** — widgets **não** acessam SQLite, repositories, use cases nem serviços de persistência.
-5. **Habilitação configurável** — `enabledWidgetIds` em `homeStateService` define quais widgets aparecem no carrossel.
-6. **Área com altura fixa** — `WidgetCarousel` usa `h-60`; não expandir dinamicamente por widget.
-7. **Lógica interna isolada** — cálculos ficam em `*.calculations.ts` dentro da pasta do widget.
+2. **Widgets são independentes da persistência** — recebem apenas `HomeWidgetContext` e funcionam igualmente com SQLite ou Remote API. A Home resolve os dados via use cases; widgets não conhecem o adapter ativo.
+3. **Registro centralizado** — todo widget deve ser declarado em `src/features/widgets/registry/widget-registry.ts`.
+4. **Recebem `HomeWidgetContext`** — dados já processados pela Home; interface `WidgetProps { context: HomeWidgetContext }`.
+5. **Isolamento de persistência** — widgets **não** acessam SQLite, repositories, use cases nem serviços de persistência.
+6. **Habilitação configurável** — `enabledWidgetIds` em `homeStateService` define quais widgets aparecem no carrossel.
+7. **Área com altura fixa** — `WidgetCarousel` usa `h-60`; não expandir dinamicamente por widget.
+8. **Lógica interna isolada** — cálculos ficam em `*.calculations.ts` dentro da pasta do widget.
 
 ### `HomeWidgetContext`
 
@@ -350,7 +351,7 @@ Funcionalidades ainda não implementadas ou fora do escopo desta etapa:
 
 | Item | Notas |
 |---|---|
-| **Adapter Remote API** | Modo remoto configurável; provider ainda não implementado |
+| **Adapter Remote API** | ✅ Implementado — Home opera via use cases + Remote API Adapter no modo Remoto |
 | **Sync V1** | Estratégia suspensa — ver [sync-v1.md](./sync-v1.md) |
 | **Anexos** | Sem upload, preview ou storage na Home |
 | **Recorrência (UI)** | Infra SQLite existe; assistente de recorrência não implementado |

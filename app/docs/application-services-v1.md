@@ -40,8 +40,8 @@ Persistence Ports
 Persistence Provider  ← resolvePersistence()
       ↓
 Persistence Adapter
-    ├─ SQLite (implementado)
-    └─ Remote API (futuro)
+    ├─ SQLite Adapter (modo Local)
+    └─ Remote API Adapter (modo Remoto)
 ```
 
 Princípios:
@@ -61,8 +61,8 @@ Princípios:
 |---|---|---|
 | **Persistence Ports** | `src/features/persistence/ports/` | Contratos de repositório por entidade (`WalletRepositoryPort`, `CategoryRepositoryPort`, …) |
 | **Persistence Provider** | `src/features/persistence/providers/` | Agrega todos os ports; retornado por `resolvePersistence()` |
-| **Adapter SQLite** | `src/features/persistence/adapters/sqlite/` | Implementação atual dos ports via `tauri-plugin-sql` |
-| **Adapter Remote API** | — | **Não implementado** — `resolvePersistence()` lança erro controlado no modo remoto |
+| **Adapter SQLite** | `src/features/persistence/adapters/sqlite/` | Implementação dos ports via `tauri-plugin-sql` (modo Local) |
+| **Adapter Remote API** | `src/features/persistence/adapters/remote-api/` | **Status: Implementado** — HTTP contra API REST (modo Remoto) |
 | **Setup de persistência** | `src/features/persistence-setup/` | Escolha Local/Remoto; config em `localStorage` (fora do SQLite) |
 
 **Fluxo típico em um use case:**
@@ -76,9 +76,10 @@ Os re-exports em `src/features/*/repositories/*.ts` permanecem por compatibilida
 
 **Estado atual:**
 
-- Modo **Local** → provider SQLite (único adapter implementado).
-- Modo **Remoto** → configuração salva; provider remoto ainda não existe.
-- A arquitetura já permite trocar o adapter sem alterar regras de negócio nos use cases.
+- Modo **Local** → SQLite Adapter.
+- Modo **Remoto** → Remote API Adapter (Remote Persistence MVP concluído).
+- A arquitetura permite trocar o adapter sem alterar regras de negócio nos use cases.
+- Seleção do provider: `Persistence Setup` → `PersistenceConfig` → `resolvePersistence()` — única forma de escolha de persistência.
 
 ---
 
@@ -1050,7 +1051,7 @@ Atalhos de interface durante cadastro de registro. **Não** são entidades, tabe
 | **RecurrenceRule** viva | Lote único via `CreateRecurringRecords` |
 | **Scheduler / jobs** | Offline first |
 | **Sync V1 (arquivos)** | Suspenso — ver [sync-v1.md](./sync-v1.md) |
-| **Remote API adapter** | Etapa futura — backend centralizado |
+| **Remote API adapter** | ✅ Implementado — Remote Persistence MVP |
 | **DeleteWallet / DeleteCategory / DeletePayee** | V1 documenta arquivamento; exclusão lógica via `deletedAt` pode ser serviço futuro |
 | **Edição em lote de recorrências** | Fora do escopo V1 |
 | **Edição em lote de transferências** | Fora do escopo V1 |

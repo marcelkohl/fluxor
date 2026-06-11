@@ -7,7 +7,23 @@
 
 ---
 
-# Status
+# Status: Suspenso
+
+> Documento mantido apenas como referência histórica. A estratégia de sincronização entre bancos SQLite **não** é mais a direção do projeto.
+
+A estratégia atual do Fluxor é:
+
+```text
+Provider Local (SQLite)
+ou
+Provider Remoto (Remote API Adapter)
+```
+
+O usuário escolhe **um** modo de persistência no Setup Inicial. Não há sincronização bidirecional entre SQLite local e MariaDB remoto — são fontes de dados alternativas, não complementares.
+
+---
+
+# Status (histórico)
 
 ⚠️ A estratégia descrita neste documento não é mais a direção atual do projeto.
 
@@ -24,9 +40,9 @@ Nova direção:
 
 - Persistence Provider
 - Persistence Ports
-- Adapter SQLite
-- Adapter Remote API (futuro)
-- Backend centralizado
+- Adapter SQLite **ou** Adapter Remote API (escolha exclusiva)
+- Backend centralizado (modo Remoto)
+- **Sem** sincronização entre bancos locais e remotos
 
 O restante deste documento permanece apenas como referência histórica.
 

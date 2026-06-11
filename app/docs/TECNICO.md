@@ -30,7 +30,7 @@
 
 ## Visão geral
 
-**Fluxor** é um aplicativo **offline first** para gestão de contas a pagar e receber. O foco é operação diária com baixa fricção, persistência desacoplada (SQLite local ou API remota futura) e widgets modulares na Home.
+**Fluxor** é um aplicativo **offline first** para gestão de contas a pagar e receber. O foco é operação diária com baixa fricção, persistência desacoplada (SQLite local ou API remota) e widgets modulares na Home.
 
 | Item | Valor |
 |---|---|
@@ -40,8 +40,8 @@
 | Porta de desenvolvimento | `5173` |
 | Banco local | `fluxor.db` (SQLite via `tauri-plugin-sql`, modo Local) |
 | Config de persistência | `localStorage` — chave `fluxor:persistence-config` |
-| Estágio atual | Home (SQLite + widgets) · Setup de persistência · Exportação CSV/PDF · Configurações |
-| Plataformas alvo | Desktop (Linux/macOS/Windows) · Android (build via Tauri 2) · Web (modo remoto futuro) |
+| Estágio atual | Home (SQLite ou API remota + widgets) · Setup de persistência · Exportação CSV/PDF · Configurações · Remote Persistence MVP |
+| Plataformas alvo | Desktop (Linux/macOS/Windows) · Android (build via Tauri 2) · Web (modo remoto) |
 
 ---
 
@@ -285,8 +285,8 @@ make dev
 - **Não** requer Rust nem deps de SO.
 - Na primeira execução, exibe **Setup Inicial de Persistência** (`PersistenceSetupPage`).
 - Modo **Local** no browser exibe *"O modo local requer o aplicativo desktop."* — SQLite **não** é inicializado.
-- Modo **Remoto** salva a URL e exibe *"Provider remoto ainda não implementado."*
-- Útil para iterar em UI, rotas, widgets e fluxo de setup.
+- Modo **Remoto** salva a URL do servidor e opera via **Remote API Adapter** (HTTP).
+- Útil para iterar em UI, rotas, widgets, fluxo de setup e integração com o backend.
 
 ### 2. Aplicação desktop (Tauri)
 
@@ -302,7 +302,7 @@ make app
 - Na primeira execução, o usuário escolhe **Local** ou **Remoto** no setup (`PersistenceSetupPage`).
 - Modo **Local** → `AppBootstrap` chama `initializeDatabase()` antes de renderizar o app.
 - Banco local: `fluxor.db` (diretório de config do app — gerenciado pelo Tauri).
-- Modo **Remoto** → SQLite **não** é inicializado; exibe estado pendente até o adapter remoto existir.
+- Modo **Remoto** → SQLite **não** é inicializado; dados via **Remote API Adapter** (HTTP → Fastify → MariaDB).
 
 ### 3. Validar SQLite (modo DEV)
 
@@ -468,6 +468,7 @@ fluxor/
 │   ├── application-services-v1.md
 │   ├── modelo-conceitual-v1.md
 │   ├── sqlite-schema-v1.md
+│   ├── remote-api-v1.md
 │   └── sync-v1.md                  # Referência histórica (suspenso)
 ├── public/
 │   └── favicon.svg         # Fonte dos ícones Tauri
@@ -509,7 +510,7 @@ fluxor/
 | `layouts/` | Estruturas de página (header, sidebar, shell) |
 | `pages/` | Views ligadas a rotas |
 | `routes/` | Definição de rotas (React Router) |
-| `features/persistence/` | Ports, provider, adapter SQLite |
+| `features/persistence/` | Ports, provider, adapters SQLite e Remote API |
 | `features/persistence-setup/` | Setup inicial Local/Remoto |
 | `features/widgets/` | Registry e widgets modulares da Home |
 | `features/*/application` | Use cases (regras de negócio) |
@@ -531,7 +532,63 @@ Configurado em `vite.config.ts` e `tsconfig.app.json`.
 
 ## Persistência
 
-A camada de persistência foi desacoplada para suportar SQLite local hoje e API remota no futuro, sem alterar use cases nem regras de negócio.
+A camada de persistência foi desacoplada para suportar SQLite local e API remota, sem alterar use cases nem regras de negócio.
+
+### Remote Persistence MVP
+
+**Status:** Concluído
+
+O app já pode operar diretamente contra a API remota sem utilizar SQLite. A mesma UI, widgets e use cases funcionam em ambos os modos.
+
+#### Fluxo remoto
+
+```text
+UI
+↓
+Use Cases
+↓
+resolvePersistence()
+↓
+Remote API Adapter
+↓
+HTTP
+↓
+Fastify
+↓
+Use Cases Server
+↓
+MariaDB
+```
+
+#### Fluxo local
+
+```text
+UI
+↓
+Use Cases
+↓
+resolvePersistence()
+↓
+SQLite Adapter
+↓
+SQLite
+```
+
+#### Provider Selection
+
+A seleção do provider de persistência ocorre **exclusivamente** por este fluxo:
+
+```text
+Persistence Setup
+↓
+PersistenceConfig
+↓
+resolvePersistence()
+↓
+Provider ativo
+```
+
+Não há outro mecanismo de seleção de persistência no app. A configuração (`PersistenceConfig`) fica em `localStorage` (fora do SQLite) para que o modo seja conhecido antes de qualquer acesso ao banco.
 
 ### Arquitetura
 
@@ -545,8 +602,8 @@ Persistence Ports
 Persistence Provider
   ↓
 Persistence Adapter
-    ├─ SQLite (implementado)
-    └─ Remote API (futuro)
+    ├─ SQLite (modo Local)
+    └─ Remote API (modo Remoto)
 ```
 
 ### Componentes
@@ -555,8 +612,8 @@ Persistence Adapter
 |---|---|---|
 | **Ports** | `src/features/persistence/ports/` | Contratos por entidade (`WalletRepositoryPort`, `FinancialRecordRepositoryPort`, …) |
 | **Provider** | `src/features/persistence/providers/` | Agrega todos os ports; interface `PersistenceProvider` |
-| **Adapter SQLite** | `src/features/persistence/adapters/sqlite/` | Implementação dos ports via `tauri-plugin-sql` |
-| **Adapter Remote API** | — | **Não implementado** |
+| **Adapter SQLite** | `src/features/persistence/adapters/sqlite/` | Implementação dos ports via `tauri-plugin-sql` (modo Local) |
+| **Adapter Remote API** | `src/features/persistence/adapters/remote-api/` | Implementação dos ports via HTTP (modo Remoto) |
 | **Setup** | `src/features/persistence-setup/` | Escolha e reconfiguração do modo de persistência |
 
 ### Setup Inicial de Persistência
@@ -568,7 +625,7 @@ O usuário escolhe:
 | Opção | Comportamento |
 |---|---|
 | **Local** | Dados no dispositivo via SQLite. No browser, bloqueado com mensagem explicativa. No Tauri, prossegue normalmente. |
-| **Remoto** | Informa URL do servidor; config salva; exibe estado pendente (*"Provider remoto ainda não implementado."*). |
+| **Remoto** | Informa URL do servidor; config salva; app opera via Remote API Adapter. |
 
 A configuração é persistida em **`localStorage`** (chave `fluxor:persistence-config`), **fora do SQLite**, para que o app saiba qual provider usar antes de qualquer acesso ao banco.
 
@@ -600,7 +657,7 @@ Existe configuração?
   └─ Sim
         ├─ local (Tauri)  → initializeDatabase() → AppRouter
         ├─ local (browser)→ mensagem de bloqueio
-        └─ remote         → RemoteProviderPendingPage
+        └─ remote         → AppRouter (Remote API Adapter)
 ```
 
 ### `resolvePersistence()`
@@ -609,7 +666,7 @@ Existe configuração?
 
 1. Lê `getPersistenceConfig()`.
 2. Sem config → `PersistenceNotConfiguredError`.
-3. `mode: "remote"` → `RemoteProviderNotImplementedError`.
+3. `mode: "remote"` → `createRemoteApiPersistenceProvider(remoteBaseUrl)`.
 4. `mode: "local"` → `ensureDatabaseReady()` → `createSqlitePersistenceProvider(db)`.
 
 Use cases (`wallet.use-cases.ts`, `category.use-cases.ts`, etc.) chamam `resolvePersistence()` e consomem os ports — **sem dependência direta de SQLite**.
@@ -623,8 +680,8 @@ Em **Configurações → Fonte de Dados**, o usuário vê o modo atual e pode **
 | Item | Status |
 |---|---|
 | SQLite como provider | ✅ Implementado (modo Local) |
-| Remote API | 🔲 Não implementado — apenas configuração salva |
-| Troca de provider | ✅ Arquitetura pronta via `resolvePersistence()` |
+| Remote API Adapter | ✅ Implementado (modo Remoto) |
+| Troca de provider | ✅ Via `PersistenceConfig` + `resolvePersistence()` |
 | Sync V1 (arquivos) | ⚠️ Suspenso — ver [sync-v1.md](./sync-v1.md) |
 
 Documentação de domínio: [application-services-v1.md](./application-services-v1.md) · [sqlite-schema-v1.md](./sqlite-schema-v1.md) · [modelo-conceitual-v1.md](./modelo-conceitual-v1.md).
@@ -970,7 +1027,7 @@ make icons
 | Integração Home com SQLite | ✅ Concluído | Registros reais, widgets, exportação |
 | Widgets modulares (3) | ✅ Concluído | Resumo, Calendário, Categorias — ver [arquitetura-home-widgets.md](./arquitetura-home-widgets.md) |
 | CRUD FinancialRecord (UI) | 🔲 Pendente | Telas do módulo principal |
-| Adapter Remote API | 🔲 Pendente | Backend centralizado |
+| Adapter Remote API | ✅ Concluído | Remote Persistence MVP — HTTP → Fastify → MariaDB |
 | Build Android (APK) | ✅ Makefile | `make apk`, `make setup-android` — ver [Android (APK)](#android-apk) |
 | Assinatura release Android | 🔲 Pendente | Keystore + Play Store |
 | Sync V1 (arquivos) | ⚠️ Suspenso | Referência histórica em [sync-v1.md](./sync-v1.md) |

@@ -53,19 +53,41 @@ O Fluxor gira em torno de **`FinancialRecord`** — o registro financeiro é a u
 
 O Fluxor suporta dois modos de armazenamento de dados, escolhidos pelo usuário no **Setup Inicial de Persistência**:
 
-| Modo | Descrição |
-|---|---|
-| **Local** | Dados persistidos no dispositivo via adapter SQLite (Tauri/desktop). |
-| **Remoto** | Dados persistidos em um servidor centralizado via adapter Remote API (futuro). |
+| Modo | Descrição | Status |
+|---|---|---|
+| **Local** | Dados persistidos no dispositivo via SQLite Adapter (Tauri/desktop). | ✅ Operacional |
+| **Remoto** | Dados persistidos em servidor centralizado via Remote API Adapter (HTTP → Fastify → MariaDB). | ✅ Operacional (Remote Persistence MVP) |
 
 A configuração (`PersistenceConfig`) é armazenada em `localStorage` — **fora** do SQLite — para que o aplicativo saiba qual provider utilizar **antes** de inicializar qualquer banco.
+
+```typescript
+type PersistenceMode = "local" | "remote";
+
+type PersistenceConfig = {
+  mode: PersistenceMode;
+  remoteBaseUrl?: string;
+  configuredAt: string;
+};
+```
+
+**Seleção do provider** — única forma:
+
+```text
+Persistence Setup
+↓
+PersistenceConfig
+↓
+resolvePersistence()
+↓
+Provider ativo (SQLite Adapter ou Remote API Adapter)
+```
 
 **Princípios:**
 
 - O modo de persistência **não altera** regras de negócio, entidades de domínio nem serviços de aplicação.
 - Apenas altera a **implementação da camada de persistência** (qual adapter atende os Persistence Ports).
 - Use cases, UI e widgets permanecem iguais; trocam apenas o provider resolvido em runtime.
-- Na implementação atual, apenas o modo **Local** (SQLite) está operacional. O modo **Remoto** salva a URL do servidor, mas o adapter ainda não foi implementado.
+- **Local** e **Remoto** são mutuamente exclusivos — não há sync entre os dois bancos.
 
 ---
 
@@ -720,7 +742,7 @@ Os itens abaixo serão tratados em documentos ou etapas dedicadas:
 | Telas e fluxos de UI | CRUD e features |
 | CRUD completo | Etapas de feature |
 | Sync de arquivos/dados (Sync V1) | Suspenso — ver [sync-v1.md](./sync-v1.md) |
-| Adapter Remote API | Etapa futura — backend centralizado |
+| Adapter Remote API | ✅ Implementado — Remote Persistence MVP |
 | Implementação do assistente de recorrência | Etapa futura (CRUD) |
 | Edição em lote de recorrências | Fora do escopo V1 |
 | Edição em lote de transferências | Fora do escopo V1 |
@@ -740,7 +762,7 @@ Os itens abaixo serão tratados em documentos ou etapas dedicadas:
 | `Category` | `Category` / SQLite | CRUD em Configurações → Categorias |
 | `Payee` | `Payee` / SQLite | CRUD em Configurações → Favorecidos |
 | `FinancialRecord` | `FinancialRecord` / SQLite | Home integrada; UI de CRUD completo pendente |
-| `Persistence Mode` | `PersistenceConfig` | Local (SQLite) ou Remoto (futuro) via `localStorage` |
+| `Persistence Mode` | `PersistenceConfig` | Local (SQLite) ou Remoto (Remote API) via `localStorage` |
 | `storedStatus` | `status` | UI usa `pending` / `completed` / `canceled` |
 | `dueDate` | `date` | Nome de exibição na Home |
 | `expectedAmount` | `amount` / `expectedAmountCents` | Centavos na persistência |

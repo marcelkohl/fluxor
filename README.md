@@ -3,7 +3,7 @@
 ![License](https://img.shields.io/badge/license-BSD%203--Clause-blue)
 ![Status](https://img.shields.io/badge/status-not%20ready-orange)
 
-Sistema de gestão financeira pessoal com suporte a execução local (SQLite) e futura operação remota via API.
+Sistema de gestão financeira pessoal com suporte a execução local (SQLite) ou remota via API REST e MariaDB.
 
 ## Visão Geral
 
@@ -209,15 +209,10 @@ Repository Ports
 Adapters
 ```
 
-Atualmente:
+Adapters implementados:
 
 ```text
 SQLite Adapter
-```
-
-Preparado para:
-
-```text
 Remote API Adapter
 ```
 
@@ -284,9 +279,7 @@ Persistência:
 API + MariaDB
 ```
 
-Em desenvolvimento.
-
-A arquitetura já está preparada para alternar entre provedores de persistência.
+O app opera diretamente contra a API remota, sem utilizar SQLite local. A mesma UI, widgets e use cases funcionam nos dois modos — apenas o adapter de persistência muda.
 
 ---
 
@@ -354,34 +347,42 @@ make docker-logs
 
 ---
 
-# Status Atual
+# Status Atual do Projeto
 
 Implementado:
 
-- Carteiras
-- Categorias
-- Favorecidos
-- Registros Financeiros
-- Efetivação
-- Reversão
-- Histórico
-- Widgets
-- Exportação PDF/CSV
+- Wallets
+- Categories
+- Payees
+- Financial Records
+- Register Payment
+- Revert Payment
+- History
+- Exportação PDF
+- Exportação CSV
 - Temas
+- Setup Local / Remoto
 - API REST
-- Swagger/OpenAPI
+- Swagger
 - MariaDB
 - Docker
+- Remote API Adapter
 
 Em desenvolvimento:
 
-- Adapter remoto do aplicativo
-- Sincronização via API
 - Autenticação
 - Usuários
-- Anexos
+- Anexos (remoto)
 - Recorrências avançadas
 - Transferências completas
+
+---
+
+## Remote Persistence MVP
+
+**Status:** Concluído
+
+O app já pode operar diretamente contra a API remota sem utilizar SQLite. A seleção do modo ocorre no Setup Inicial de Persistência (`Local` ou `Remoto`); os use cases permanecem os mesmos — apenas o provider resolvido em runtime muda (`SQLite Adapter` ou `Remote API Adapter`).
 
 ---
 
