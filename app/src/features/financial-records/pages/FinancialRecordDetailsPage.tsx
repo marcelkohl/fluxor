@@ -9,14 +9,13 @@ import {
 } from "@/components/admin-form";
 import { ThemeIcon, type ThemeIconName } from "@/config/theme";
 import { ValidationError } from "@/features/database";
+import { RecordAttachmentsSection } from "@/features/financial-records/components/RecordAttachmentsSection";
 import { RegisterPaymentSheet } from "@/features/financial-records/components/RegisterPaymentSheet";
 import { registerPayment, revertPayment } from "@/features/financial-records/application";
-import type { Attachment } from "@/features/financial-records/domain";
 import { useFinancialRecordDetails } from "@/features/financial-records/hooks/useFinancialRecordDetails";
 import {
   formatCentsToCurrency,
   formatDateTimePtBr,
-  formatFileSize,
   getStatusColorClass,
   RECORD_STATUS_LABELS,
   RECORD_TYPE_LABELS,
@@ -25,24 +24,6 @@ import {
 function EmptySectionMessage({ message }: { message: string }) {
   return (
     <p className="px-4 py-3 text-sm text-text-secondary">{message}</p>
-  );
-}
-
-function AttachmentListItem({ attachment }: { attachment: Attachment }) {
-  const title = attachment.label?.trim() || attachment.filename;
-
-  return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-soft text-text-secondary">
-        <ThemeIcon name="upload" size="sm" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-text-primary">{title}</p>
-        <p className="truncate text-xs text-text-secondary">
-          {attachment.filename} · {formatFileSize(attachment.size)}
-        </p>
-      </div>
-    </div>
   );
 }
 
@@ -273,37 +254,27 @@ export function FinancialRecordDetailsPage() {
               </div>
             </section>
 
-            <section>
-              <FormSectionHeader title="Documentos" />
-              <div className="divide-y divide-border/60 rounded-xl border border-border bg-surface">
-                {data.documents.length === 0 ? (
-                  <EmptySectionMessage message="Nenhum documento anexado." />
-                ) : (
-                  data.documents.map((attachment) => (
-                    <AttachmentListItem
-                      key={attachment.id}
-                      attachment={attachment}
-                    />
-                  ))
-                )}
-              </div>
-            </section>
+            <RecordAttachmentsSection
+              title="Documentos"
+              kind="document"
+              attachments={data.documents}
+              recordId={data.record.id}
+              walletName={data.wallet?.name ?? "carteira"}
+              recordDescription={data.record.description}
+              dueDate={data.record.dueDate}
+              onChanged={reload}
+            />
 
-            <section>
-              <FormSectionHeader title="Comprovantes" />
-              <div className="divide-y divide-border/60 rounded-xl border border-border bg-surface">
-                {data.receipts.length === 0 ? (
-                  <EmptySectionMessage message="Nenhum comprovante anexado." />
-                ) : (
-                  data.receipts.map((attachment) => (
-                    <AttachmentListItem
-                      key={attachment.id}
-                      attachment={attachment}
-                    />
-                  ))
-                )}
-              </div>
-            </section>
+            <RecordAttachmentsSection
+              title="Comprovantes"
+              kind="receipt"
+              attachments={data.receipts}
+              recordId={data.record.id}
+              walletName={data.wallet?.name ?? "carteira"}
+              recordDescription={data.record.description}
+              dueDate={data.record.dueDate}
+              onChanged={reload}
+            />
 
             <section>
               <FormSectionHeader title="Histórico" />

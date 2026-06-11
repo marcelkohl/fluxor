@@ -1,6 +1,7 @@
 export {
   archiveWallet,
   createWallet,
+  getWalletById,
   listWallets,
   setDefaultWallet,
   updateWallet,

@@ -36,6 +36,15 @@ export async function listWallets(): Promise<Wallet[]> {
   return wallets.listActive();
 }
 
+export async function getWalletById(walletId: string): Promise<Wallet> {
+  const { wallets } = await resolvePersistence();
+  const wallet = await wallets.getById(walletId);
+  if (!wallet) {
+    throw new NotFoundError("Carteira não encontrada");
+  }
+  return wallet;
+}
+
 export async function createWallet(input: CreateWalletInput): Promise<Wallet> {
   const { wallets } = await resolvePersistence();
 

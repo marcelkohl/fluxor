@@ -40,6 +40,8 @@
 | Porta de desenvolvimento | `5173` |
 | Banco local | `fluxor.db` (SQLite via `tauri-plugin-sql`, modo Local) |
 | Config de persistência | `localStorage` — chave `fluxor:persistence-config` |
+| Config de armazenamento de documentos | `localStorage` — chave `fluxor:document-storage-config` |
+| Estado de sync dos providers | `localStorage` — chave `fluxor:storage-provider-state` |
 | Estágio atual | Home (SQLite ou API remota + widgets) · Setup de persistência · Exportação CSV/PDF · Configurações · Remote Persistence MVP |
 | Plataformas alvo | Desktop (Linux/macOS/Windows) · Android (build via Tauri 2) · Web (modo remoto) |
 
@@ -590,6 +592,87 @@ Provider ativo
 
 Não há outro mecanismo de seleção de persistência no app. A configuração (`PersistenceConfig`) fica em `localStorage` (fora do SQLite) para que o modo seja conhecido antes de qualquer acesso ao banco.
 
+### Storage Providers
+
+**Status:** arquitetura de registry implementada; Local Storage funcional; Google Drive placeholder.
+
+Navegação em Configurações:
+
+```text
+Sync de Anexos e Recibos
+↓
+Lista de Providers
+↓
+Configuração específica de cada Provider
+```
+
+| Camada | Pasta | Descrição |
+|---|---|---|
+| **StorageProviderRegistry** | `src/features/document-storage/registry/` | Registro central de providers com metadados (`id`, `name`, `description`, `status`, `enabled`, capacidades, `lastSyncAt`) |
+| **Estado runtime** | `src/features/document-storage/services/storage-provider-state.service.ts` | `localStorage` — chave `fluxor:storage-provider-state` |
+| **Lista de providers** | `SyncProvidersListSection` | Tela principal; providers vêm do registry, não hardcoded |
+| **Local Storage (config)** | `LocalStorageSettingsSection` | Pasta raiz, template e preview (Tauri) |
+| **Settings** | Configurações → Sync de Anexos e Recibos | Entrada no menu renomeada |
+
+**Providers registrados:**
+
+| Provider | Status | Configuração |
+|---|---|---|
+| **Local Storage** | `active` | Implementado — pasta raiz e organização automática |
+| **Google Drive** | `disabled` | Placeholder — mensagem "Google Drive ainda não está disponível." |
+
+**Estados de provider:** `active`, `disabled`, `error`, `syncing` (nesta etapa: `active` e `disabled`).
+
+**Roadmap (não implementados):**
+
+- Google Drive
+- WebDAV
+- OneDrive
+- Dropbox
+- S3
+
+### Storage Provider Architecture (I/O de arquivos)
+
+**Status:** Local Folder Storage Provider (V1) implementado no desktop (Tauri).
+
+Anexos (`Attachment`) são domínio e persistem metadados via `AttachmentRepositoryPort` (SQLite ou API remota). A **cópia física** de arquivos é responsabilidade de uma camada separada:
+
+```text
+UI (Detalhes do Registro)
+↓
+pickAndAttachFileToRecord()
+↓
+StorageProviderPort
+↓
+LocalFolderStorageProvider (V1 — desktop)
+↓
+createAttachment() → AttachmentRepositoryPort
+```
+
+| Camada | Pasta | Descrição |
+|---|---|---|
+| **StorageProviderPort** | `src/features/document-storage/ports/` | `storeFile`, `fileExists`, `deleteFile` (no-op na remoção V2) |
+| **LocalFolderStorageProvider** | `src/features/document-storage/adapters/local-folder/` | Copia arquivo para pasta estruturada sob a pasta raiz configurada |
+| **Config** | `src/features/document-storage/services/document-storage-config.service.ts` | `localStorage` — chave `fluxor:document-storage-config` |
+| **Settings** | Sync de Anexos e Recibos → Local Storage | Escolha da pasta raiz (Tauri) |
+
+**Template de organização (V1):**
+
+```text
+/{wallet}/{year}/{month-name}/{filename-based-on-description}.{extension}
+```
+
+Exemplo: `/pessoal/2026/julho/energia eletrica.pdf`
+
+**Comportamento:**
+
+- **Desktop (Tauri):** seleção de arquivo → cópia → `createAttachment` com `localPath` absoluto.
+- **Browser:** listagem e remoção de anexos funcionam; seleção de arquivo exibe mensagem informativa (sem upload).
+- **Remoção:** `removeAttachment()` faz soft delete do metadado; **não** apaga o arquivo físico nesta etapa.
+- **Histórico:** `attachment_added` / `attachment_removed` via use cases (local SQLite; remoto via API).
+
+**Nota:** `StorageProviderPort` (I/O de arquivos) e `StorageProviderRegistry` (metadados de sync na UI) são camadas distintas.
+
 ### Arquitetura
 
 ```
@@ -748,6 +831,8 @@ React Router v7 com `BrowserRouter`. Rotas definidas em `src/routes/index.tsx`. 
 
 - `tauri-plugin-opener` — abrir URLs/arquivos no SO
 - `tauri-plugin-sql` — SQLite local (`sqlite:fluxor.db`)
+- `tauri-plugin-dialog` — seleção de arquivos e pastas (anexos, exportação)
+- `tauri-plugin-fs` — leitura/escrita/cópia de arquivos (Local Folder Storage)
 
 ### Adicionar comando Tauri (referência futura)
 

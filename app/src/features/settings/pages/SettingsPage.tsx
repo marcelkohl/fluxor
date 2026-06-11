@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 
 import { APP_NAME, APP_VERSION } from "@/config/app-meta";
 import { ThemeIcon } from "@/config/theme";
+import {
+  LocalStorageSettingsSection,
+  SyncProvidersListSection,
+} from "@/features/document-storage";
 import { DatabaseDevPanel } from "@/features/database/dev";
 import { DataSourceSettingsSection } from "@/features/persistence-setup";
 import { SettingsMenuItem } from "@/features/settings/components/SettingsMenuItem";
@@ -13,24 +17,43 @@ import {
   type SettingsMenuEntry,
 } from "@/features/settings/settings.constants";
 
-type SettingsView = "index" | "theme" | "data-source" | "dev";
+type SettingsView =
+  | "index"
+  | "theme"
+  | "data-source"
+  | "attachment-sync"
+  | "dev";
 
 const SUBVIEW_TITLES: Record<Exclude<SettingsView, "index">, string> = {
   theme: "Tema",
   "data-source": "Fonte de Dados",
+  "attachment-sync": "Sync de Anexos e Recibos",
   dev: "Diagnóstico DEV",
+};
+
+const ATTACHMENT_SYNC_PROVIDER_TITLES: Record<string, string> = {
+  "local-storage": "Local Storage",
 };
 
 export function SettingsPage() {
   const navigate = useNavigate();
   const [view, setView] = useState<SettingsView>("index");
+  const [attachmentSyncProviderId, setAttachmentSyncProviderId] = useState<
+    string | null
+  >(null);
   const isDev = import.meta.env.DEV;
 
   function handleBack() {
+    if (attachmentSyncProviderId) {
+      setAttachmentSyncProviderId(null);
+      return;
+    }
+
     if (view !== "index") {
       setView("index");
       return;
     }
+
     navigate("/");
   }
 
@@ -46,6 +69,12 @@ export function SettingsPage() {
 
     if (item.id === "data-source") {
       setView("data-source");
+      return;
+    }
+
+    if (item.id === "attachment-sync") {
+      setAttachmentSyncProviderId(null);
+      setView("attachment-sync");
       return;
     }
 
@@ -69,7 +98,20 @@ export function SettingsPage() {
     }
   }
 
-  const headerTitle = view === "index" ? "Configurações" : SUBVIEW_TITLES[view];
+  function getHeaderTitle(): string {
+    if (attachmentSyncProviderId) {
+      return (
+        ATTACHMENT_SYNC_PROVIDER_TITLES[attachmentSyncProviderId] ??
+        "Provider"
+      );
+    }
+
+    if (view === "index") {
+      return "Configurações";
+    }
+
+    return SUBVIEW_TITLES[view];
+  }
 
   return (
     <div className="flex min-h-full flex-col bg-background">
@@ -82,7 +124,9 @@ export function SettingsPage() {
         >
           <ThemeIcon name="chevronLeft" />
         </button>
-        <h1 className="text-base font-semibold text-text-primary">{headerTitle}</h1>
+        <h1 className="text-base font-semibold text-text-primary">
+          {getHeaderTitle()}
+        </h1>
       </header>
 
       {view === "index" ? (
@@ -146,6 +190,21 @@ export function SettingsPage() {
       {view === "data-source" ? (
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <DataSourceSettingsSection />
+        </div>
+      ) : null}
+
+      {view === "attachment-sync" && !attachmentSyncProviderId ? (
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <SyncProvidersListSection
+            onSelectProvider={setAttachmentSyncProviderId}
+          />
+        </div>
+      ) : null}
+
+      {view === "attachment-sync" &&
+      attachmentSyncProviderId === "local-storage" ? (
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <LocalStorageSettingsSection />
         </div>
       ) : null}
 

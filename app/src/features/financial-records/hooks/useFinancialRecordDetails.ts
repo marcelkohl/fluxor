@@ -15,6 +15,8 @@ import type {
 } from "@/features/financial-records/domain";
 import { listPayees } from "@/features/payees/application";
 import type { Payee } from "@/features/payees/domain";
+import { getWalletById } from "@/features/wallets/application";
+import type { Wallet } from "@/features/wallets/domain";
 import type { FinancialRecordStatus } from "@/features/home/types";
 import {
   deriveDisplayStatus,
@@ -23,6 +25,7 @@ import {
 
 export interface FinancialRecordDetailsData {
   record: FinancialRecord;
+  wallet: Wallet | null;
   category: Category | null;
   payee: Payee | null;
   documents: Attachment[];
@@ -95,6 +98,13 @@ export function useFinancialRecordDetails(
             listPayees(),
           ]);
 
+        let wallet: Wallet | null = null;
+        try {
+          wallet = await getWalletById(record.walletId);
+        } catch {
+          wallet = null;
+        }
+
         if (cancelled) {
           return;
         }
@@ -107,6 +117,7 @@ export function useFinancialRecordDetails(
 
         setData({
           record,
+          wallet,
           category,
           payee,
           documents: attachments.filter((item) => item.kind === "document"),

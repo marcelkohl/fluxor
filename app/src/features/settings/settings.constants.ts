@@ -17,6 +17,13 @@ export const SETTINGS_MENU_ITEMS: SettingsMenuEntry[] = [
     enabled: true,
   },
   {
+    id: "attachment-sync",
+    title: "Sync de Anexos e Recibos",
+    subtitle: "Providers de armazenamento e sincronização",
+    icon: "upload",
+    enabled: true,
+  },
+  {
     id: "data-source",
     title: "Fonte de Dados",
     subtitle: "Local ou servidor remoto",

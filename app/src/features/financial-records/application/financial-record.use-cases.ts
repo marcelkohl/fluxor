@@ -393,7 +393,8 @@ export interface CreateAttachmentInput {
 export async function createAttachment(
   input: CreateAttachmentInput,
 ): Promise<Attachment> {
-  const { financialRecords, attachments } = await resolvePersistence();
+  const { financialRecords, attachments, financialRecordHistory } =
+    await resolvePersistence();
 
   await ensureRecordExists(financialRecords, input.recordId);
 
@@ -411,18 +412,42 @@ export async function createAttachment(
     label: input.label ?? null,
   };
 
-  return attachments.create(data);
+  const attachment = await attachments.create(data);
+
+  await financialRecordHistory.appendEvent({
+    recordId: attachment.recordId,
+    eventType: "attachment_added",
+    description: "Anexo adicionado",
+    metadata: JSON.stringify({
+      kind: attachment.kind,
+      filename: attachment.filename,
+    }),
+  });
+
+  return attachment;
 }
 
 export async function removeAttachment(attachmentId: string): Promise<Attachment> {
-  const { attachments } = await resolvePersistence();
+  const { attachments, financialRecordHistory } = await resolvePersistence();
 
   const existing = await attachments.getById(attachmentId);
   if (!existing) {
     throw new NotFoundError("Anexo não encontrado");
   }
 
-  return attachments.remove(attachmentId);
+  const removed = await attachments.remove(attachmentId);
+
+  await financialRecordHistory.appendEvent({
+    recordId: removed.recordId,
+    eventType: "attachment_removed",
+    description: "Anexo removido",
+    metadata: JSON.stringify({
+      kind: removed.kind,
+      filename: removed.filename,
+    }),
+  });
+
+  return removed;
 }
 
 export async function getAttachmentById(attachmentId: string): Promise<Attachment> {
