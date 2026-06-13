@@ -11,8 +11,10 @@ import { ThemeIcon, type ThemeIconName } from "@/config/theme";
 import { ValidationError } from "@/features/database";
 import { RecordAttachmentsSection } from "@/features/financial-records/components/RecordAttachmentsSection";
 import { RegisterPaymentSheet } from "@/features/financial-records/components/RegisterPaymentSheet";
-import { registerPayment, revertPayment } from "@/features/financial-records/application";
+import { registerPayment, revertPayment, archiveFinancialRecord } from "@/features/financial-records/application";
+import { RecurrenceScopeSheet } from "@/features/financial-records/components/RecurrenceScopeSheet";
 import { useFinancialRecordDetails } from "@/features/financial-records/hooks/useFinancialRecordDetails";
+import type { RecurrenceScope } from "@fluxor/contracts";
 import {
   formatCentsToCurrency,
   formatDateTimePtBr,
@@ -36,6 +38,9 @@ export function FinancialRecordDetailsPage() {
   const [showRevertConfirm, setShowRevertConfirm] = useState(false);
   const [isReverting, setIsReverting] = useState(false);
   const [revertError, setRevertError] = useState<string | null>(null);
+  const [archiveScopeSheetOpen, setArchiveScopeSheetOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   const isPayable = data?.record.type === "payable";
   const amountColor = isPayable ? "text-expense" : "text-income";
@@ -48,6 +53,55 @@ export function FinancialRecordDetailsPage() {
     data != null &&
     data.record.storedStatus === "completed" &&
     data.record.transferGroupId == null;
+  const canEdit =
+    data != null &&
+    data.record.storedStatus === "pending" &&
+    data.record.transferGroupId == null;
+  const canArchive = data != null && data.record.transferGroupId == null;
+  const isRecurringRecord = Boolean(data?.record.recurrenceGroupId);
+
+  async function performArchive(scope?: RecurrenceScope) {
+    if (!recordId?.trim()) {
+      setArchiveError("Registro inválido");
+      return;
+    }
+
+    setIsArchiving(true);
+    setArchiveError(null);
+
+    try {
+      await archiveFinancialRecord({
+        recordId: recordId.trim(),
+        scope,
+      });
+      navigate("/", {
+        replace: true,
+        state: { toast: "Registro removido" },
+      });
+    } catch (archiveFailure) {
+      setArchiveError(
+        archiveFailure instanceof Error
+          ? archiveFailure.message
+          : "Não foi possível remover o registro",
+      );
+    } finally {
+      setIsArchiving(false);
+      setArchiveScopeSheetOpen(false);
+    }
+  }
+
+  function handleArchiveClick() {
+    if (isRecurringRecord) {
+      setArchiveScopeSheetOpen(true);
+      return;
+    }
+
+    void performArchive();
+  }
+
+  async function handleArchiveScopeSelect(scope: RecurrenceScope) {
+    await performArchive(scope);
+  }
 
   async function handleRegisterPayment(input: {
     effectiveDate: string;
@@ -107,13 +161,26 @@ export function FinancialRecordDetailsPage() {
           Detalhes da Conta
         </h1>
 
-        <button
-          type="button"
-          aria-disabled="true"
-          className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold text-link"
-        >
-          Editar
-        </button>
+        {canEdit ? (
+          <button
+            type="button"
+            onClick={() => navigate(`/records/${recordId}/edit`)}
+            className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold text-link"
+          >
+            Editar
+          </button>
+        ) : null}
+
+        {canArchive ? (
+          <button
+            type="button"
+            disabled={isArchiving}
+            onClick={handleArchiveClick}
+            className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold text-expense disabled:opacity-40"
+          >
+            {isArchiving ? "Removendo…" : "Remover"}
+          </button>
+        ) : null}
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -132,6 +199,12 @@ export function FinancialRecordDetailsPage() {
             }`}
           >
             {error}
+          </p>
+        ) : null}
+
+        {archiveError ? (
+          <p className="mb-4 rounded-lg border border-expense/30 bg-expense/10 px-3 py-2 text-sm text-expense">
+            {archiveError}
           </p>
         ) : null}
 
@@ -197,6 +270,15 @@ export function FinancialRecordDetailsPage() {
                       </span>
                     </div>
                   </>
+                ) : null}
+
+                {data.recurrenceLabel ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-text-secondary">Recorrência</span>
+                    <span className="font-medium text-text-primary">
+                      {data.recurrenceLabel}
+                    </span>
+                  </div>
                 ) : null}
               </div>
             </section>
@@ -368,6 +450,13 @@ export function FinancialRecordDetailsPage() {
           onClose={() => setIsPaymentSheetOpen(false)}
         />
       ) : null}
+
+      <RecurrenceScopeSheet
+        isOpen={archiveScopeSheetOpen}
+        title="Remover"
+        onSelect={(scope) => void handleArchiveScopeSelect(scope)}
+        onClose={() => setArchiveScopeSheetOpen(false)}
+      />
     </div>
   );
 }

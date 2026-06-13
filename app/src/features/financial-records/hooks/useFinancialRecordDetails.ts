@@ -5,6 +5,7 @@ import type { Category } from "@/features/categories/domain";
 import { DatabaseNotReadyError, NotFoundError } from "@/features/database";
 import {
   getFinancialRecordById,
+  getRecurrenceBatch,
   listAttachmentsByRecord,
   listHistoryByRecord,
 } from "@/features/financial-records/application";
@@ -33,6 +34,7 @@ export interface FinancialRecordDetailsData {
   history: FinancialRecordHistoryEvent[];
   displayStatus: FinancialRecordStatus;
   referenceDate: string;
+  recurrenceLabel: string | null;
 }
 
 export interface UseFinancialRecordDetailsResult {
@@ -124,6 +126,19 @@ export function useFinancialRecordDetails(
           ? (payees.find((item) => item.id === record.payeeId) ?? null)
           : null;
 
+        let recurrenceLabel: string | null = null;
+        if (
+          record.recurrenceGroupId &&
+          record.recurrenceIndex != null
+        ) {
+          try {
+            const batch = await getRecurrenceBatch(record.recurrenceGroupId);
+            recurrenceLabel = `${record.recurrenceIndex}/${batch.occurrenceCount}`;
+          } catch {
+            recurrenceLabel = `${record.recurrenceIndex}/?`;
+          }
+        }
+
         setData({
           record,
           wallet,
@@ -134,6 +149,7 @@ export function useFinancialRecordDetails(
           history: [...history].reverse(),
           displayStatus: deriveDisplayStatus(record, referenceDate),
           referenceDate,
+          recurrenceLabel,
         });
         setError(null);
         setNotFound(false);

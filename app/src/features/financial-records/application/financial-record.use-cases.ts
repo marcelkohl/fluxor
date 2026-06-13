@@ -4,6 +4,8 @@ import {
   requireNonEmpty,
 } from "@/features/database/utils";
 import { resolvePersistence } from "@/features/persistence";
+import { getPersistenceConfig } from "@/features/persistence-setup";
+import type { RecurrenceScope } from "@fluxor/contracts";
 import type {
   CategoryRepositoryPort,
   FinancialRecordRepositoryPort,
@@ -27,6 +29,13 @@ import type {
   TransferLink,
   UpdateFinancialRecordData,
 } from "../domain";
+import {
+  buildBatchUpdateData,
+  buildFullUpdateData,
+  hasUpdateFields,
+  isRecurringRecord,
+  resolveRecurrenceScope,
+} from "./recurrence-scope.utils";
 
 const RECORD_TYPES: readonly FinancialRecordType[] = ["payable", "receivable"];
 const ATTACHMENT_KINDS = ["document", "receipt"] as const;
@@ -111,6 +120,18 @@ async function ensurePayeeIfProvided(
   }
 }
 
+export async function validateCreateFinancialRecordReferences(
+  input: Pick<
+    CreateFinancialRecordInput,
+    "walletId" | "categoryId" | "payeeId"
+  >,
+): Promise<void> {
+  const { wallets, categories, payees } = await resolvePersistence();
+  await ensureActiveWallet(wallets, input.walletId);
+  await ensureActiveCategory(categories, input.categoryId);
+  await ensurePayeeIfProvided(payees, input.payeeId);
+}
+
 async function ensureRecordExists(
   recordRepo: FinancialRecordRepositoryPort,
   recordId: string,
@@ -173,6 +194,9 @@ export async function createFinancialRecord(
 
 export interface UpdateFinancialRecordInput {
   recordId: string;
+  scope?: RecurrenceScope;
+  walletId?: string;
+  type?: FinancialRecordType;
   description?: string;
   categoryId?: string;
   dueDate?: string;
@@ -183,15 +207,80 @@ export interface UpdateFinancialRecordInput {
   alertOffset?: number | null;
 }
 
+export interface ArchiveFinancialRecordInput {
+  recordId: string;
+  scope?: RecurrenceScope;
+}
+
+async function validateAndNormalizeUpdateData(
+  wallets: WalletRepositoryPort,
+  categories: CategoryRepositoryPort,
+  payees: PayeeRepositoryPort,
+  data: UpdateFinancialRecordData,
+): Promise<UpdateFinancialRecordData> {
+  const normalized: UpdateFinancialRecordData = { ...data };
+
+  if (normalized.walletId !== undefined) {
+    await ensureActiveWallet(wallets, normalized.walletId);
+  }
+  if (normalized.type !== undefined) {
+    normalized.type = validateRecordType(normalized.type);
+  }
+  if (normalized.description !== undefined) {
+    normalized.description = requireNonEmpty(
+      normalized.description,
+      "Descrição",
+    );
+  }
+  if (normalized.categoryId !== undefined) {
+    await ensureActiveCategory(categories, normalized.categoryId);
+  }
+  if (normalized.dueDate !== undefined) {
+    normalized.dueDate = validateDueDate(normalized.dueDate);
+  }
+  if (normalized.expectedAmount !== undefined) {
+    normalized.expectedAmount = validateAmount(
+      normalized.expectedAmount,
+      "Valor previsto",
+    );
+  }
+  if (normalized.payeeId !== undefined) {
+    await ensurePayeeIfProvided(payees, normalized.payeeId);
+  }
+
+  return normalized;
+}
+
+async function listRecurrenceTargets(
+  financialRecords: FinancialRecordRepositoryPort,
+  existing: FinancialRecord,
+  scope: RecurrenceScope,
+): Promise<FinancialRecord[]> {
+  if (
+    !isRecurringRecord(existing) ||
+    scope === "this_only" ||
+    existing.recurrenceGroupId == null ||
+    existing.recurrenceIndex == null
+  ) {
+    return [existing];
+  }
+
+  return financialRecords.listByRecurrenceGroup(existing.recurrenceGroupId, {
+    minRecurrenceIndex: existing.recurrenceIndex,
+  });
+}
+
 export async function updateFinancialRecord(
   input: UpdateFinancialRecordInput,
 ): Promise<FinancialRecord> {
   const persistence = await resolvePersistence();
-  const { categories, payees, financialRecords, financialRecordHistory } =
+  const { wallets, categories, payees, financialRecords, financialRecordHistory } =
     persistence;
 
   requireAtLeastOneField(
     {
+      walletId: input.walletId,
+      type: input.type,
       description: input.description,
       categoryId: input.categoryId,
       dueDate: input.dueDate,
@@ -214,56 +303,89 @@ export async function updateFinancialRecord(
 
   if (existing.storedStatus === "completed") {
     throw new ValidationError(
-      "Registro efetivado não pode ser alterado por este serviço",
+      "Registros efetivados não podem ser editados nesta versão.",
     );
   }
 
-  const data: UpdateFinancialRecordData = {};
+  const scope = resolveRecurrenceScope(input.scope);
+  const targets = await listRecurrenceTargets(
+    financialRecords,
+    existing,
+    scope,
+  );
 
-  if (input.description !== undefined) {
-    data.description = requireNonEmpty(input.description, "Descrição");
-  }
-  if (input.categoryId !== undefined) {
-    await ensureActiveCategory(categories, input.categoryId);
-    data.categoryId = input.categoryId;
-  }
-  if (input.dueDate !== undefined) {
-    data.dueDate = validateDueDate(input.dueDate);
-  }
-  if (input.expectedAmount !== undefined) {
-    data.expectedAmount = validateAmount(input.expectedAmount, "Valor previsto");
-  }
-  if (input.payeeId !== undefined) {
-    await ensurePayeeIfProvided(payees, input.payeeId);
-    data.payeeId = input.payeeId;
-  }
-  if (input.recordNote !== undefined) {
-    data.recordNote = input.recordNote;
-  }
-  if (input.alertEnabled !== undefined) {
-    data.alertEnabled = input.alertEnabled;
-  }
-  if (input.alertOffset !== undefined) {
-    data.alertOffset = input.alertOffset;
+  const fullData = await validateAndNormalizeUpdateData(
+    wallets,
+    categories,
+    payees,
+    buildFullUpdateData(input),
+  );
+
+  const batchData = await validateAndNormalizeUpdateData(
+    wallets,
+    categories,
+    payees,
+    buildBatchUpdateData(input),
+  );
+
+  const updateData = scope === "this_and_future" ? batchData : fullData;
+
+  if (!hasUpdateFields(updateData)) {
+    throw new ValidationError("Nenhum campo para atualizar");
   }
 
-  const updated = await financialRecords.update(input.recordId, data);
+  const config = getPersistenceConfig();
+  if (config?.mode === "remote") {
+    const updated = await financialRecords.update(input.recordId, {
+      ...updateData,
+      scope,
+    });
 
-  await financialRecordHistory.appendEvent({
-    recordId: updated.id,
-    eventType: "record_updated",
-    description: "Registro alterado",
-  });
+    await financialRecordHistory.appendEvent({
+      recordId: updated.id,
+      eventType: "record_updated",
+      description: "Registro alterado",
+    });
 
-  return updated;
+    return updated;
+  }
+
+  let lastUpdated = existing;
+
+  for (const target of targets) {
+    if (target.transferGroupId) {
+      continue;
+    }
+
+    if (target.storedStatus === "completed") {
+      continue;
+    }
+
+    const updateData =
+      scope === "this_and_future" ? batchData : fullData;
+
+    if (!hasUpdateFields(updateData)) {
+      continue;
+    }
+
+    lastUpdated = await financialRecords.update(target.id, updateData);
+
+    await financialRecordHistory.appendEvent({
+      recordId: lastUpdated.id,
+      eventType: "record_updated",
+      description: "Registro alterado",
+    });
+  }
+
+  return lastUpdated;
 }
 
 export async function archiveFinancialRecord(
-  recordId: string,
+  input: ArchiveFinancialRecordInput,
 ): Promise<FinancialRecord> {
   const { financialRecords } = await resolvePersistence();
 
-  const existing = await ensureRecordExists(financialRecords, recordId);
+  const existing = await ensureRecordExists(financialRecords, input.recordId);
 
   if (existing.transferGroupId) {
     throw new ValidationError(
@@ -271,7 +393,29 @@ export async function archiveFinancialRecord(
     );
   }
 
-  return financialRecords.archive(recordId);
+  const scope = resolveRecurrenceScope(input.scope);
+  const targets = await listRecurrenceTargets(
+    financialRecords,
+    existing,
+    scope,
+  );
+
+  const config = getPersistenceConfig();
+  if (config?.mode === "remote") {
+    return financialRecords.archive(input.recordId, { scope });
+  }
+
+  let lastArchived = existing;
+
+  for (const target of targets) {
+    if (target.transferGroupId) {
+      continue;
+    }
+
+    lastArchived = await financialRecords.archive(target.id);
+  }
+
+  return lastArchived;
 }
 
 export async function getFinancialRecordById(

@@ -128,18 +128,22 @@ export class SqliteFinancialRecordRepository implements FinancialRecordRepositor
 
     await this.db.execute(
       `UPDATE financial_record SET
-        description = $1,
-        categoryId = $2,
-        dueDate = $3,
-        expectedAmount = $4,
-        payeeId = $5,
-        recordNote = $6,
-        alertEnabled = $7,
-        alertOffset = $8,
-        transferGroupId = $9,
-        updatedAt = $10
-      WHERE id = $11 AND deletedAt IS NULL`,
+        walletId = $1,
+        type = $2,
+        description = $3,
+        categoryId = $4,
+        dueDate = $5,
+        expectedAmount = $6,
+        payeeId = $7,
+        recordNote = $8,
+        alertEnabled = $9,
+        alertOffset = $10,
+        transferGroupId = $11,
+        updatedAt = $12
+      WHERE id = $13 AND deletedAt IS NULL`,
       [
+        data.walletId ?? current.walletId,
+        data.type ?? current.type,
         data.description ?? current.description,
         data.categoryId ?? current.categoryId,
         data.dueDate ?? current.dueDate,
@@ -248,6 +252,26 @@ export class SqliteFinancialRecordRepository implements FinancialRecordRepositor
     const where = conditions.join(" AND ");
     const rows = await this.db.select<FinancialRecordRow[]>(
       `SELECT * FROM financial_record WHERE ${where} ORDER BY dueDate ASC, createdAt ASC`,
+      params,
+    );
+    return rows.map(mapFinancialRecordRow);
+  }
+
+  async listByRecurrenceGroup(
+    recurrenceGroupId: string,
+    options: { minRecurrenceIndex?: number } = {},
+  ): Promise<FinancialRecord[]> {
+    const conditions = [ACTIVE_WHERE, "recurrenceGroupId = $1"];
+    const params: unknown[] = [recurrenceGroupId];
+
+    if (options.minRecurrenceIndex != null) {
+      params.push(options.minRecurrenceIndex);
+      conditions.push(`recurrenceIndex >= $${params.length}`);
+    }
+
+    const where = conditions.join(" AND ");
+    const rows = await this.db.select<FinancialRecordRow[]>(
+      `SELECT * FROM financial_record WHERE ${where} ORDER BY recurrenceIndex ASC`,
       params,
     );
     return rows.map(mapFinancialRecordRow);

@@ -129,6 +129,8 @@ export class MariadbFinancialRecordRepository
 
     await pool.execute<ResultSetHeader>(
       `UPDATE financial_record SET
+        walletId = ?,
+        type = ?,
         description = ?,
         categoryId = ?,
         dueDate = ?,
@@ -141,6 +143,8 @@ export class MariadbFinancialRecordRepository
         updatedAt = ?
       WHERE id = ? AND deletedAt IS NULL`,
       [
+        data.walletId ?? current.walletId,
+        data.type ?? current.type,
         data.description ?? current.description,
         data.categoryId ?? current.categoryId,
         data.dueDate ?? current.dueDate,
@@ -372,5 +376,29 @@ export class MariadbFinancialRecordRepository
     );
 
     return mapFinancialRecordRow(rows[0] as FinancialRecordRow);
+  }
+
+  async listByRecurrenceGroup(
+    recurrenceGroupId: string,
+    options: { minRecurrenceIndex?: number } = {},
+  ): Promise<FinancialRecordResponse[]> {
+    const pool = getPool();
+    const conditions = [ACTIVE_FINANCIAL_RECORD_WHERE, "recurrenceGroupId = ?"];
+    const params: unknown[] = [recurrenceGroupId];
+
+    if (options.minRecurrenceIndex != null) {
+      conditions.push("recurrenceIndex >= ?");
+      params.push(options.minRecurrenceIndex);
+    }
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT ${FINANCIAL_RECORD_SELECT_COLUMNS}
+       FROM financial_record
+       WHERE ${conditions.join(" AND ")}
+       ORDER BY recurrenceIndex ASC`,
+      params,
+    );
+
+    return (rows as FinancialRecordRow[]).map(mapFinancialRecordRow);
   }
 }

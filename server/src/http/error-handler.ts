@@ -19,6 +19,7 @@ import { PayeeNotFoundError } from "../payees/errors/payee-not-found.error.js";
 import { PayeeValidationError } from "../payees/errors/payee-validation.error.js";
 import { WalletNotFoundError } from "../wallets/errors/wallet-not-found.error.js";
 import { WalletValidationError } from "../wallets/errors/wallet-validation.error.js";
+import { RecurrenceBatchNotFoundError } from "../recurrence-batches/errors/recurrence-batch-not-found.error.js";
 
 function sendError(
   reply: FastifyReply,
@@ -67,6 +68,14 @@ export function registerErrorHandler(app: FastifyInstance): void {
         sendError(reply, 404, {
           code: "attachment_not_found",
           message: "Attachment not found",
+        });
+        return;
+      }
+
+      if (error instanceof RecurrenceBatchNotFoundError) {
+        sendError(reply, 404, {
+          code: "recurrence_batch_not_found",
+          message: "Recurrence batch not found",
         });
         return;
       }

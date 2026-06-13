@@ -163,7 +163,11 @@ declare module "@fluxor/contracts" {
     paymentNote?: string | null;
   }
 
+  export type RecurrenceScope = "this_only" | "this_and_future";
+
   export interface UpdateFinancialRecordRequest {
+    walletId?: EntityId;
+    type?: FinancialRecordType;
     description?: string;
     categoryId?: EntityId;
     dueDate?: IsoDate;
@@ -173,6 +177,11 @@ declare module "@fluxor/contracts" {
     alertEnabled?: boolean;
     alertOffset?: number | null;
     transferGroupId?: EntityId | null;
+    scope?: RecurrenceScope;
+  }
+
+  export interface ArchiveFinancialRecordRequest {
+    scope?: RecurrenceScope;
   }
 
   export interface RegisterPaymentRequest {
@@ -250,6 +259,60 @@ declare module "@fluxor/contracts" {
   export type ListFinancialRecordsResponse =
     | FinancialRecordResponse[]
     | PaginatedListResponse<FinancialRecordResponse>;
+
+  export type RecurrenceFrequency = "daily" | "weekly" | "monthly" | "yearly";
+
+  export type RecurrenceWeekdayPosition =
+    | "first"
+    | "second"
+    | "third"
+    | "fourth"
+    | "last";
+
+  export type RecurrenceEnd =
+    | { type: "count"; count: number }
+    | { type: "until"; date: IsoDate };
+
+  export interface RecurrenceRule {
+    interval: number;
+    frequency: RecurrenceFrequency;
+    weekDays?: number[];
+    monthDay?: number;
+    monthWeekdayPosition?: RecurrenceWeekdayPosition;
+    monthWeekday?: number;
+    end: RecurrenceEnd;
+  }
+
+  export interface RecurringFinancialRecordTemplate
+    extends Omit<
+      CreateFinancialRecordRequest,
+      | "recurrenceGroupId"
+      | "recurrenceIndex"
+      | "transferGroupId"
+      | "storedStatus"
+      | "effectiveDate"
+      | "effectiveAmount"
+      | "paymentNote"
+    > {}
+
+  export interface CreateRecurringFinancialRecordsRequest {
+    record: RecurringFinancialRecordTemplate;
+    recurrence: RecurrenceRule;
+  }
+
+  export interface CreateRecurringFinancialRecordsResponse {
+    batchId: EntityId;
+    records: FinancialRecordResponse[];
+  }
+
+  export interface RecurrenceBatchResponse {
+    id: EntityId;
+    ruleDescription: string;
+    startDate: IsoDate;
+    endDate: IsoDate | null;
+    occurrenceCount: number;
+    createdAt: IsoDateTime;
+  }
 
   export type AttachmentKind = "document" | "receipt";
 

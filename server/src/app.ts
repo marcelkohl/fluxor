@@ -14,6 +14,7 @@ import { categoriesRoute } from "./routes/categories.route.js";
 import { financialRecordsRoute } from "./routes/financial-records.route.js";
 import { payeesRoute } from "./routes/payees.route.js";
 import { walletsRoute } from "./routes/wallets.route.js";
+import { recurrenceBatchesRoute } from "./routes/recurrence-batches.route.js";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -42,6 +43,9 @@ export async function buildApp() {
   await app.register(payeesRoute, { prefix: "/api/v1/payees" });
   await app.register(financialRecordsRoute, {
     prefix: "/api/v1/financial-records",
+  });
+  await app.register(recurrenceBatchesRoute, {
+    prefix: "/api/v1/recurrence-batches",
   });
   await app.register(attachmentsRoute, { prefix: "/api/v1/attachments" });
   await registerSwaggerUi(app);

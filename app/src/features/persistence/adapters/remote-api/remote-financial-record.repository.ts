@@ -2,6 +2,7 @@ import type {
   CreateFinancialRecordRequest,
   FinancialRecordResponse,
   ListFinancialRecordsResponse,
+  RecurrenceScope,
   RegisterPaymentRequest,
   UpdateFinancialRecordRequest,
 } from "@fluxor/contracts";
@@ -52,6 +53,8 @@ export class RemoteFinancialRecordRepository
     data: UpdateFinancialRecordData,
   ): Promise<FinancialRecord> {
     const body: UpdateFinancialRecordRequest = {
+      walletId: data.walletId,
+      type: data.type,
       description: data.description,
       categoryId: data.categoryId,
       dueDate: data.dueDate,
@@ -61,6 +64,7 @@ export class RemoteFinancialRecordRepository
       alertEnabled: data.alertEnabled,
       alertOffset: data.alertOffset,
       transferGroupId: data.transferGroupId,
+      scope: data.scope,
     };
 
     return this.client.request<FinancialRecordResponse>(
@@ -101,9 +105,15 @@ export class RemoteFinancialRecordRepository
     );
   }
 
-  async archive(id: string): Promise<FinancialRecord> {
+  async archive(
+    id: string,
+    options?: { scope?: RecurrenceScope },
+  ): Promise<FinancialRecord> {
+    const query =
+      options?.scope != null ? `?scope=${encodeURIComponent(options.scope)}` : "";
+
     return this.client.request<FinancialRecordResponse>(
-      `/financial-records/${id}`,
+      `/financial-records/${id}${query}`,
       {
         method: "DELETE",
       },
@@ -133,5 +143,12 @@ export class RemoteFinancialRecordRepository
       `/financial-records${query}`,
     );
     return unwrapList(response);
+  }
+
+  async listByRecurrenceGroup(
+    _recurrenceGroupId: string,
+    _options?: { minRecurrenceIndex?: number },
+  ): Promise<FinancialRecord[]> {
+    return [];
   }
 }

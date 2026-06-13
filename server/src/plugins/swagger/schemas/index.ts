@@ -16,10 +16,15 @@ export {
   archiveFinancialRecordRouteDoc,
   createFinancialRecordRequestSchema,
   createFinancialRecordRouteDoc,
+  createRecurringFinancialRecordsRequestSchema,
+  createRecurringFinancialRecordsResponseSchema,
+  recurrenceRuleSchema,
+  createRecurringFinancialRecordsRouteDoc,
   financialRecordResponseSchema,
   getFinancialRecordRouteDoc,
   listFinancialRecordsResponseSchema,
   listFinancialRecordsRouteDoc,
+  recurringFinancialRecordTemplateSchema,
   registerPaymentRequestSchema,
   registerPaymentRouteDoc,
   revertPaymentRequestSchema,
@@ -69,3 +74,7 @@ export {
   updateWalletRouteDoc,
   walletResponseSchema,
 } from "./wallets.schemas.js";
+export {
+  recurrenceBatchResponseSchema,
+  getRecurrenceBatchRouteDoc,
+} from "./recurrence-batches.schemas.js";

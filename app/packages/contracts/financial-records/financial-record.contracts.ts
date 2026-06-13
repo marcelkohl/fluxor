@@ -5,6 +5,9 @@ import type {
   PaginatedListResponse,
   PaginationRequest,
 } from "../common/pagination";
+import type { RecurrenceScope } from "./recurrence-scope.contracts";
+
+export type { RecurrenceScope } from "./recurrence-scope.contracts";
 
 export type FinancialRecordType = "payable" | "receivable";
 
@@ -31,6 +34,8 @@ export interface CreateFinancialRecordRequest {
 }
 
 export interface UpdateFinancialRecordRequest {
+  walletId?: EntityId;
+  type?: FinancialRecordType;
   description?: string;
   categoryId?: EntityId;
   dueDate?: IsoDate;
@@ -40,6 +45,11 @@ export interface UpdateFinancialRecordRequest {
   alertEnabled?: boolean;
   alertOffset?: number | null;
   transferGroupId?: EntityId | null;
+  scope?: RecurrenceScope;
+}
+
+export interface ArchiveFinancialRecordRequest {
+  scope?: RecurrenceScope;
 }
 
 export interface RegisterPaymentRequest {

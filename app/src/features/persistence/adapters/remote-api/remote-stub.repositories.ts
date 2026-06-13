@@ -2,13 +2,10 @@ import { RemoteFeatureNotSupportedError } from "@/features/persistence/errors/re
 import type {
   PayeeDocumentRepositoryPort,
   PayeePaymentMethodRepositoryPort,
-  RecurrenceBatchRepositoryPort,
   TransferLinkRepositoryPort,
 } from "@/features/persistence/ports";
 import type {
-  CreateRecurrenceBatchData,
   CreateTransferLinkData,
-  RecurrenceBatch,
   TransferLink,
 } from "@/features/financial-records/domain";
 import type {
@@ -28,18 +25,6 @@ export class RemoteTransferLinkRepository implements TransferLinkRepositoryPort 
   }
 
   async getById(_id: string): Promise<TransferLink | null> {
-    return null;
-  }
-}
-
-export class RemoteRecurrenceBatchRepository
-  implements RecurrenceBatchRepositoryPort
-{
-  async create(_data: CreateRecurrenceBatchData): Promise<RecurrenceBatch> {
-    return notSupported("recurrenceBatches.create");
-  }
-
-  async getById(_id: string): Promise<RecurrenceBatch | null> {
     return null;
   }
 }

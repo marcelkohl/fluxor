@@ -101,6 +101,14 @@ export async function validateUpdateFinancialRecordInput(
   validateDate(data.dueDate, "dueDate");
   validateAmount(data.expectedAmount, "expectedAmount");
 
+  if (data.type !== undefined && data.type !== "payable" && data.type !== "receivable") {
+    throw new FinancialRecordValidationError(
+      "validation_error",
+      "type must be payable or receivable",
+    );
+  }
+
+  await validateWalletId(persistence, data.walletId);
   await validateCategoryId(persistence, data.categoryId);
   await validatePayeeId(persistence, data.payeeId);
 }

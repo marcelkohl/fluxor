@@ -5,6 +5,8 @@ import { listCategories } from "@/features/categories/application";
 import type { Category } from "@/features/categories/domain";
 import { listPayees } from "@/features/payees/application";
 import type { Payee } from "@/features/payees/domain";
+import { listWallets } from "@/features/wallets/application";
+import type { Wallet } from "@/features/wallets/domain";
 
 function getLoadErrorMessage(error: unknown): string {
   if (error instanceof DatabaseNotReadyError) {
@@ -19,6 +21,7 @@ function getLoadErrorMessage(error: unknown): string {
 export function useCreateRecordCatalogs() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,9 +33,10 @@ export function useCreateRecordCatalogs() {
       setError(null);
 
       try {
-        const [loadedCategories, loadedPayees] = await Promise.all([
+        const [loadedCategories, loadedPayees, loadedWallets] = await Promise.all([
           listCategories(),
           listPayees(),
+          listWallets(),
         ]);
 
         if (cancelled) {
@@ -41,11 +45,13 @@ export function useCreateRecordCatalogs() {
 
         setCategories(loadedCategories);
         setPayees(loadedPayees);
+        setWallets(loadedWallets.filter((wallet) => !wallet.isArchived));
       } catch (loadError) {
         if (!cancelled) {
           setError(getLoadErrorMessage(loadError));
           setCategories([]);
           setPayees([]);
+          setWallets([]);
         }
       } finally {
         if (!cancelled) {
@@ -64,6 +70,7 @@ export function useCreateRecordCatalogs() {
   return {
     categories,
     payees,
+    wallets,
     isLoading,
     error,
   };

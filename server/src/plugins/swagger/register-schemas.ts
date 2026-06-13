@@ -21,8 +21,12 @@ import {
 } from "./schemas/history.schemas.js";
 import {
   createFinancialRecordRequestSchema,
+  createRecurringFinancialRecordsRequestSchema,
+  createRecurringFinancialRecordsResponseSchema,
   financialRecordResponseSchema,
   listFinancialRecordsResponseSchema,
+  recurrenceRuleSchema,
+  recurringFinancialRecordTemplateSchema,
   registerPaymentRequestSchema,
   revertPaymentRequestSchema,
   updateFinancialRecordRequestSchema,
@@ -41,6 +45,7 @@ import {
   updateWalletRequestSchema,
   walletResponseSchema,
 } from "./schemas/wallets.schemas.js";
+import { recurrenceBatchResponseSchema } from "./schemas/recurrence-batches.schemas.js";
 
 /** Registra JSON Schemas reutilizáveis (OpenAPI components). */
 export function registerOpenApiSchemas(app: FastifyInstance): void {
@@ -61,6 +66,10 @@ export function registerOpenApiSchemas(app: FastifyInstance): void {
   app.addSchema(createPayeeRequestSchema);
   app.addSchema(updatePayeeRequestSchema);
   app.addSchema(listPayeesResponseSchema);
+  app.addSchema(recurringFinancialRecordTemplateSchema);
+  app.addSchema(recurrenceRuleSchema);
+  app.addSchema(createRecurringFinancialRecordsRequestSchema);
+  app.addSchema(createRecurringFinancialRecordsResponseSchema);
   app.addSchema(financialRecordResponseSchema);
   app.addSchema(createFinancialRecordRequestSchema);
   app.addSchema(updateFinancialRecordRequestSchema);
@@ -72,4 +81,5 @@ export function registerOpenApiSchemas(app: FastifyInstance): void {
   app.addSchema(attachmentResponseSchema);
   app.addSchema(createAttachmentRequestSchema);
   app.addSchema(listAttachmentsResponseSchema);
+  app.addSchema(recurrenceBatchResponseSchema);
 }

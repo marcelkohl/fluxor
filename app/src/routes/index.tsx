@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { MainLayout } from "@/layouts/MainLayout";
 import { HomePage } from "@/pages/HomePage";
-import { CreateFinancialRecordRoutePage } from "@/pages/CreateFinancialRecordPage";
+import { CreateFinancialRecordRoutePage, EditFinancialRecordRoutePage } from "@/pages/CreateFinancialRecordPage";
 import { FinancialRecordDetailsRoutePage } from "@/pages/FinancialRecordDetailsPage";
 import { CategoriesRoutePage } from "@/pages/CategoriesPage";
 import { PayeesRoutePage } from "@/pages/PayeesPage";
@@ -25,6 +25,14 @@ export function AppRouter() {
           element={
             <MainLayout>
               <CreateFinancialRecordRoutePage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/records/:id/edit"
+          element={
+            <MainLayout>
+              <EditFinancialRecordRoutePage />
             </MainLayout>
           }
         />

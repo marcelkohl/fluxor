@@ -47,6 +47,8 @@ export interface CreateFinancialRecordData {
 }
 
 export interface UpdateFinancialRecordData {
+  walletId?: string;
+  type?: FinancialRecordType;
   description?: string;
   categoryId?: string;
   dueDate?: string;
@@ -56,6 +58,7 @@ export interface UpdateFinancialRecordData {
   alertEnabled?: boolean;
   alertOffset?: number | null;
   transferGroupId?: string | null;
+  scope?: import("@fluxor/contracts").RecurrenceScope;
 }
 
 export interface ListFinancialRecordsFilter {

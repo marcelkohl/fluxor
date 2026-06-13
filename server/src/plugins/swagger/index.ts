@@ -56,6 +56,7 @@ export {
   archiveWalletRouteDoc,
   createCategoryRouteDoc,
   createFinancialRecordRouteDoc,
+  createRecurringFinancialRecordsRouteDoc,
   createPayeeRouteDoc,
   createWalletRouteDoc,
   getFinancialRecordRouteDoc,
@@ -76,4 +77,5 @@ export {
   updateFinancialRecordRouteDoc,
   updatePayeeRouteDoc,
   updateWalletRouteDoc,
+  getRecurrenceBatchRouteDoc,
 } from "./schemas/index.js";

@@ -25,4 +25,8 @@ export interface FinancialRecordRepositoryPort {
   ): Promise<ListFinancialRecordsResponse>;
   getById(id: string): Promise<FinancialRecordResponse | null>;
   archive(id: string): Promise<FinancialRecordResponse>;
+  listByRecurrenceGroup(
+    recurrenceGroupId: string,
+    options?: { minRecurrenceIndex?: number },
+  ): Promise<FinancialRecordResponse[]>;
 }

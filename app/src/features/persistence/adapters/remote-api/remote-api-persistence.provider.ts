@@ -9,9 +9,9 @@ import { RemotePayeeRepository } from "./remote-payee.repository";
 import {
   RemotePayeeDocumentRepository,
   RemotePayeePaymentMethodRepository,
-  RemoteRecurrenceBatchRepository,
   RemoteTransferLinkRepository,
 } from "./remote-stub.repositories";
+import { RemoteRecurrenceBatchRepository } from "./remote-recurrence-batch.repository";
 import { RemoteWalletRepository } from "./remote-wallet.repository";
 
 export function createRemoteApiPersistenceProvider(
@@ -29,6 +29,6 @@ export function createRemoteApiPersistenceProvider(
     attachments: new RemoteAttachmentRepository(client),
     financialRecordHistory: new RemoteFinancialRecordHistoryRepository(client),
     transferLinks: new RemoteTransferLinkRepository(),
-    recurrenceBatches: new RemoteRecurrenceBatchRepository(),
+    recurrenceBatches: new RemoteRecurrenceBatchRepository(client),
   };
 }

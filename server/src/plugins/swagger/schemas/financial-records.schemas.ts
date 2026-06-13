@@ -111,6 +111,8 @@ export const updateFinancialRecordRequestSchema = {
   $id: "UpdateFinancialRecordRequest",
   type: "object",
   properties: {
+    walletId: { type: "string", format: "uuid" },
+    type: { type: "string", enum: ["payable", "receivable"] },
     description: { type: "string", minLength: 1 },
     categoryId: { type: "string", format: "uuid" },
     dueDate: { type: "string", format: "date" },
@@ -120,6 +122,10 @@ export const updateFinancialRecordRequestSchema = {
     alertEnabled: { type: "boolean" },
     alertOffset: { type: ["integer", "null"] },
     transferGroupId: { type: ["string", "null"], format: "uuid" },
+    scope: {
+      type: "string",
+      enum: ["this_only", "this_and_future"],
+    },
   },
   additionalProperties: false,
   minProperties: 1,
@@ -140,6 +146,103 @@ export const registerPaymentRequestSchema = {
 export const revertPaymentRequestSchema = {
   $id: "RevertPaymentRequest",
   type: "object",
+  additionalProperties: false,
+} as const;
+
+export const recurrenceRuleSchema = {
+  $id: "RecurrenceRule",
+  type: "object",
+  properties: {
+    interval: { type: "integer", minimum: 1, maximum: 60 },
+    frequency: {
+      type: "string",
+      enum: ["daily", "weekly", "monthly", "yearly"],
+    },
+    weekDays: {
+      type: "array",
+      items: { type: "integer", minimum: 0, maximum: 6 },
+    },
+    monthDay: { type: "integer", minimum: 1, maximum: 31 },
+    monthWeekdayPosition: {
+      type: "string",
+      enum: ["first", "second", "third", "fourth", "last"],
+    },
+    monthWeekday: { type: "integer", minimum: 0, maximum: 6 },
+    end: {
+      oneOf: [
+        {
+          type: "object",
+          properties: {
+            type: { type: "string", const: "count" },
+            count: { type: "integer", minimum: 2, maximum: 60 },
+          },
+          required: ["type", "count"],
+          additionalProperties: false,
+        },
+        {
+          type: "object",
+          properties: {
+            type: { type: "string", const: "until" },
+            date: { type: "string", format: "date" },
+          },
+          required: ["type", "date"],
+          additionalProperties: false,
+        },
+      ],
+    },
+  },
+  required: ["interval", "frequency", "end"],
+  additionalProperties: false,
+} as const;
+
+export const recurringFinancialRecordTemplateSchema = {
+  $id: "RecurringFinancialRecordTemplate",
+  type: "object",
+  properties: {
+    walletId: { type: "string", format: "uuid" },
+    type: { type: "string", enum: ["payable", "receivable"] },
+    description: { type: "string", minLength: 1 },
+    categoryId: { type: "string", format: "uuid" },
+    dueDate: { type: "string", format: "date" },
+    expectedAmount: { type: "integer", minimum: 1 },
+    payeeId: { type: ["string", "null"], format: "uuid" },
+    recordNote: { type: ["string", "null"] },
+    alertEnabled: { type: "boolean" },
+    alertOffset: { type: ["integer", "null"] },
+  },
+  required: [
+    "walletId",
+    "type",
+    "description",
+    "categoryId",
+    "dueDate",
+    "expectedAmount",
+  ],
+  additionalProperties: false,
+} as const;
+
+export const createRecurringFinancialRecordsRequestSchema = {
+  $id: "CreateRecurringFinancialRecordsRequest",
+  type: "object",
+  properties: {
+    record: { $ref: "RecurringFinancialRecordTemplate#" },
+    recurrence: { $ref: "RecurrenceRule#" },
+  },
+  required: ["record", "recurrence"],
+  additionalProperties: false,
+} as const;
+
+export const createRecurringFinancialRecordsResponseSchema = {
+  $id: "CreateRecurringFinancialRecordsResponse",
+  type: "object",
+  properties: {
+    batchId: { type: "string", format: "uuid" },
+    records: {
+      type: "array",
+      items: { $ref: "FinancialRecordResponse#" },
+    },
+  },
+  required: ["batchId", "records"],
   additionalProperties: false,
 } as const;
 
@@ -299,6 +402,26 @@ export const createFinancialRecordRouteDoc = {
   },
 } as const;
 
+export const createRecurringFinancialRecordsRouteDoc = {
+  tags: ["FinancialRecords"],
+  summary: "Criar registros recorrentes",
+  description:
+    "Cria um lote de recorrência e N registros financeiros independentes com datas geradas pela regra informada.",
+  body: { $ref: "CreateRecurringFinancialRecordsRequest#" },
+  response: {
+    201: {
+      description: "Lote e registros criados.",
+      content: {
+        "application/json": {
+          schema: { $ref: "CreateRecurringFinancialRecordsResponse#" },
+        },
+      },
+    },
+    400: financialRecordErrorResponses[400],
+    404: financialRecordErrorResponses[404],
+  },
+} as const;
+
 export const updateFinancialRecordRouteDoc = {
   tags: ["FinancialRecords"],
   summary: "Atualizar registro financeiro",
@@ -325,8 +448,18 @@ export const archiveFinancialRecordRouteDoc = {
   tags: ["FinancialRecords"],
   summary: "Arquivar registro financeiro",
   description:
-    "Exclusão lógica — define `deletedAt`. Não remove fisicamente.",
+    "Exclusão lógica — define `deletedAt`. Para recorrências, use `scope=this_and_future` para arquivar esta e próximas ocorrências.",
   params: financialRecordIdParam,
+  querystring: {
+    type: "object",
+    properties: {
+      scope: {
+        type: "string",
+        enum: ["this_only", "this_and_future"],
+      },
+    },
+    additionalProperties: false,
+  },
   response: {
     200: {
       description: "Registro arquivado.",

@@ -14,7 +14,14 @@ export interface FinancialRecordRepositoryPort {
     data: RegisterPaymentData,
   ): Promise<FinancialRecord>;
   revertPayment(id: string): Promise<FinancialRecord>;
-  archive(id: string): Promise<FinancialRecord>;
+  archive(
+    id: string,
+    options?: { scope?: import("@fluxor/contracts").RecurrenceScope },
+  ): Promise<FinancialRecord>;
   getById(id: string): Promise<FinancialRecord | null>;
   list(filter?: ListFinancialRecordsFilter): Promise<FinancialRecord[]>;
+  listByRecurrenceGroup(
+    recurrenceGroupId: string,
+    options?: { minRecurrenceIndex?: number },
+  ): Promise<FinancialRecord[]>;
 }

@@ -36,14 +36,23 @@ export type {
 
 export type {
   CreateFinancialRecordRequest,
+  CreateRecurringFinancialRecordsRequest,
+  CreateRecurringFinancialRecordsResponse,
   FinancialRecordResponse,
   FinancialRecordType,
   ListFinancialRecordsRequest,
   ListFinancialRecordsResponse,
+  RecurrenceEnd,
+  RecurrenceFrequency,
+  RecurrenceRule,
+  RecurrenceWeekdayPosition,
+  RecurrenceScope,
+  RecurringFinancialRecordTemplate,
   RegisterPaymentRequest,
   RevertPaymentRequest,
   StoredStatus,
   UpdateFinancialRecordRequest,
+  ArchiveFinancialRecordRequest,
 } from "./financial-records";
 
 export type {

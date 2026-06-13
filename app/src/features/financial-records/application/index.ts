@@ -17,10 +17,12 @@ export {
   revertPayment,
   summarizeAttachmentKindsByRecordIds,
   updateFinancialRecord,
+  validateCreateFinancialRecordReferences,
 } from "./financial-record.use-cases";
 
 export type {
   AppendHistoryEventInput,
+  ArchiveFinancialRecordInput,
   AttachmentKindFlags,
   CreateAttachmentInput,
   CreateFinancialRecordInput,
@@ -29,3 +31,10 @@ export type {
   RegisterPaymentInput,
   UpdateFinancialRecordInput,
 } from "./financial-record.use-cases";
+
+export { createRecurringFinancialRecords } from "./create-recurring-financial-records";
+
+export type {
+  CreateRecurringFinancialRecordsInput,
+  CreateRecurringFinancialRecordsResult,
+} from "./create-recurring-financial-records";
