@@ -7,6 +7,7 @@ import {
 } from "@/features/home/hooks/useRecordSwipeAction";
 import { canQuickSettleRecord } from "@/features/home/utils/can-quick-settle-record";
 import { formatCurrency, isToday } from "@/features/home/utils";
+import { getRecordStatusStripClass } from "@/features/home/utils/get-record-status-strip-class";
 import { CategoryIcon } from "./CategoryIcon";
 
 const SWIPE_ACTION_LABEL = "Efetivar";
@@ -68,30 +69,34 @@ export function RecordItem({
 
   const content = (
     <>
-      {category ? (
-        <CategoryIcon
-          category={category}
-          hasDocument={record.hasDocument}
-          hasReceipt={record.hasReceipt}
-        />
-      ) : null}
+      <div className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5">
+        {category ? (
+          <CategoryIcon
+            category={category}
+            hasDocument={record.hasDocument}
+            hasReceipt={record.hasReceipt}
+          />
+        ) : null}
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-text-primary">
-          {record.title}
-        </p>
-        <p className="truncate text-xs text-text-secondary">
-          {category?.name ?? "Sem categoria"}
-        </p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-text-primary">
+            {record.title}
+          </p>
+          <p className="truncate text-xs text-text-secondary">
+            {category?.name ?? "Sem categoria"}
+          </p>
+        </div>
+
+        <div className="shrink-0 text-right">
+          <p className={`text-sm font-semibold tabular-nums ${amountColor}`}>
+            {amountPrefix}
+            {formatCurrency(record.amount)}
+          </p>
+          <StatusBadge record={record} referenceDate={referenceDate} />
+        </div>
       </div>
 
-      <div className="shrink-0 text-right">
-        <p className={`text-sm font-semibold tabular-nums ${amountColor}`}>
-          {amountPrefix}
-          {formatCurrency(record.amount)}
-        </p>
-        <StatusBadge record={record} referenceDate={referenceDate} />
-      </div>
+      <RecordStatusStrip record={record} referenceDate={referenceDate} />
     </>
   );
 
@@ -103,7 +108,7 @@ export function RecordItem({
       <button
         type="button"
         onClick={() => navigate(`/records/${record.id}`)}
-        className={`flex w-full items-center gap-3 px-4 py-2.5 text-left ${RECORD_ROW_BG_CLASS} ${rowHoverClass}`}
+        className={`flex w-full items-stretch text-left ${RECORD_ROW_BG_CLASS} ${rowHoverClass}`}
       >
         {content}
       </button>
@@ -139,7 +144,7 @@ export function RecordItem({
         role="button"
         tabIndex={0}
         aria-label={`${record.title}. Deslize para efetivar`}
-        className={`relative z-10 flex w-full touch-pan-y items-center gap-3 px-4 py-2.5 text-left select-none ${RECORD_ROW_BG_CLASS} ${rowHoverClass} ${
+        className={`relative z-10 flex w-full touch-pan-y items-stretch text-left select-none ${RECORD_ROW_BG_CLASS} ${rowHoverClass} ${
           isDragging || isSettling
             ? ""
             : "transition-[transform,background-color] duration-200 ease-out"
@@ -180,6 +185,20 @@ function getPendingLabelColor(
   }
 
   return "text-text-secondary";
+}
+
+function RecordStatusStrip({
+  record,
+  referenceDate,
+}: StatusBadgeProps) {
+  const colorClass = getRecordStatusStripClass(record, referenceDate);
+
+  return (
+    <div
+      className={`w-[5px] shrink-0 self-stretch ${colorClass}`}
+      aria-hidden="true"
+    />
+  );
 }
 
 function StatusBadge({ record, referenceDate }: StatusBadgeProps) {

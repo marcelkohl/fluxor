@@ -3,7 +3,6 @@ import {
   formatLastSyncLabel,
   formatStorageProviderStatusLabel,
 } from "../utils/format-last-sync";
-import { googleDriveProviderDefinition } from "./definitions/google-drive.definition";
 import { localStorageProviderDefinition } from "./definitions/local-storage.definition";
 import type {
   StorageProviderDefinition,
@@ -12,7 +11,6 @@ import type {
 
 const STORAGE_PROVIDER_DEFINITIONS: StorageProviderDefinition[] = [
   localStorageProviderDefinition,
-  googleDriveProviderDefinition,
 ];
 
 function toViewModel(
